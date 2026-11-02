@@ -44,11 +44,32 @@ php artisan serve --host=127.0.0.1 --port=8000
 
 Open http://127.0.0.1:8000 (UI) and http://127.0.0.1:8000/docs (API docs).
 
+### Two databases: which one is for what
+
+| Database | Holds | Used by |
+|---|---|---|
+| `laravel_search_demo` (real) | Your seeded data (1M or 10M rows) | The running app, the demo, `search:benchmark`, `benchmarks/*` |
+| `laravel_search_demo_test` | A few rows per test, reset for every test | `php artisan test` only (set in `phpunit.xml`) |
+
+- The test database must exist, but it stays tiny. The tests never touch the
+  real data, so it is safe to run them at any time.
+- Tests prove the **logic** (billing exactly once, typos, timeouts, security).
+  They cannot prove **speed or behaviour at 10M rows**; use the real database
+  for that.
+- To check the real database, run `php artisan search:benchmark --queries=2000`
+  (speed) and use the demo page or the API with the demo key (behaviour).
+  Searching never changes billing. Selecting a suggestion adds 1 usage to the
+  demo client, so use a throwaway client (`php artisan api-client:create "Check"`)
+  if you want to keep the demo counter at 0.
+- For a presentation, testing on the real database is fine. The separate test
+  database is only there so the automated tests stay fast and never change your
+  data.
+
 Verify:
 
 ```bash
-php artisan test              # 115 passed, 434 assertions
-php artisan usage:reconcile   # counters match the ledger
+php artisan test              # 115 passed, 434 assertions (test database)
+php artisan usage:reconcile   # counters match the ledger (real database)
 ```
 
 Full 10M dataset (long, multi-GB, get approval first):
