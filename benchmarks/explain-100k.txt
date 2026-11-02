@@ -1,0 +1,163 @@
+SET
+=== 3-character fragment: lon ===
+                                                                                 QUERY PLAN                                                                                 
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=203.64..203.67 rows=10 width=78) (actual time=2.022..2.024 rows=10 loops=1)
+   Buffers: shared hit=126
+   ->  Sort  (cost=203.64..204.14 rows=200 width=78) (actual time=2.021..2.022 rows=10 loops=1)
+         Sort Key: ((lower(candidates.content) ~~ 'lon%'::text)) DESC, (word_similarity('lon'::text, candidates.content)) DESC, (length(candidates.content)), candidates.id
+         Sort Method: top-N heapsort  Memory: 26kB
+         Buffers: shared hit=126
+         ->  Subquery Scan on candidates  (cost=18.11..199.32 rows=200 width=78) (actual time=0.268..1.875 rows=200 loops=1)
+               Buffers: shared hit=112
+               ->  Limit  (cost=18.11..197.32 rows=200 width=37) (actual time=0.251..0.772 rows=200 loops=1)
+                     Buffers: shared hit=112
+                     ->  Bitmap Heap Scan on records  (cost=18.11..923.12 rows=1010 width=37) (actual time=0.251..0.759 rows=200 loops=1)
+                           Recheck Cond: (content ~~* '%lon%'::text)
+                           Heap Blocks: exact=109
+                           Buffers: shared hit=112
+                           ->  Bitmap Index Scan on records_content_trgm_idx  (cost=0.00..17.86 rows=1010 width=0) (actual time=0.172..0.172 rows=1083 loops=1)
+                                 Index Cond: (content ~~* '%lon%'::text)
+                                 Buffers: shared hit=3
+ Planning:
+   Buffers: shared hit=153
+ Planning Time: 5.107 ms
+ Execution Time: 2.435 ms
+(21 rows)
+
+=== partial any-order: london roa ===
+                                                                                        QUERY PLAN                                                                                        
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=299.63..299.66 rows=10 width=78) (actual time=2.086..2.091 rows=10 loops=1)
+   Buffers: shared hit=74
+   ->  Sort  (cost=299.63..299.84 rows=82 width=78) (actual time=2.084..2.087 rows=10 loops=1)
+         Sort Key: ((lower(candidates.content) ~~ 'london roa%'::text)) DESC, (word_similarity('london roa'::text, candidates.content)) DESC, (length(candidates.content)), candidates.id
+         Sort Method: top-N heapsort  Memory: 26kB
+         Buffers: shared hit=74
+         ->  Subquery Scan on candidates  (cost=52.10..297.86 rows=82 width=78) (actual time=0.488..2.009 rows=61 loops=1)
+               Buffers: shared hit=74
+               ->  Limit  (cost=52.10..297.04 rows=82 width=37) (actual time=0.469..1.161 rows=61 loops=1)
+                     Buffers: shared hit=74
+                     ->  Bitmap Heap Scan on records  (cost=52.10..297.04 rows=82 width=37) (actual time=0.469..1.151 rows=61 loops=1)
+                           Recheck Cond: ((content ~~* '%london%'::text) AND (content ~~* '%roa%'::text))
+                           Heap Blocks: exact=59
+                           Buffers: shared hit=74
+                           ->  Bitmap Index Scan on records_content_trgm_idx  (cost=0.00..52.08 rows=82 width=0) (actual time=0.450..0.451 rows=61 loops=1)
+                                 Index Cond: ((content ~~* '%london%'::text) AND (content ~~* '%roa%'::text))
+                                 Buffers: shared hit=15
+ Planning:
+   Buffers: shared hit=1
+ Planning Time: 0.343 ms
+ Execution Time: 2.185 ms
+(21 rows)
+
+=== short-token filter: 25 london ===
+                                                                                       QUERY PLAN                                                                                       
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=961.89..961.91 rows=10 width=78) (actual time=4.123..4.125 rows=10 loops=1)
+   Buffers: shared hit=617
+   ->  Sort  (cost=961.89..961.99 rows=40 width=78) (actual time=4.122..4.124 rows=10 loops=1)
+         Sort Key: ((lower(candidates.content) ~~ '25 london%'::text)) DESC, (word_similarity('25 london'::text, candidates.content)) DESC, (length(candidates.content)), candidates.id
+         Sort Method: top-N heapsort  Memory: 27kB
+         Buffers: shared hit=617
+         ->  Subquery Scan on candidates  (cost=48.04..961.02 rows=40 width=78) (actual time=0.446..4.093 rows=50 loops=1)
+               Buffers: shared hit=617
+               ->  Limit  (cost=48.04..960.62 rows=40 width=37) (actual time=0.433..3.722 rows=50 loops=1)
+                     Buffers: shared hit=617
+                     ->  Bitmap Heap Scan on records  (cost=48.04..960.62 rows=40 width=37) (actual time=0.432..3.717 rows=50 loops=1)
+                           Recheck Cond: (content ~~* '%london%'::text)
+                           Filter: ((' '::text || lower(content)) ~~ '% 25%'::text)
+                           Rows Removed by Filter: 1033
+                           Heap Blocks: exact=605
+                           Buffers: shared hit=617
+                           ->  Bitmap Index Scan on records_content_trgm_idx  (cost=0.00..48.03 rows=1010 width=0) (actual time=0.303..0.304 rows=1083 loops=1)
+                                 Index Cond: (content ~~* '%london%'::text)
+                                 Buffers: shared hit=12
+ Planning:
+   Buffers: shared hit=1
+ Planning Time: 0.279 ms
+ Execution Time: 4.180 ms
+(23 rows)
+
+=== typo vocabulary correction: londn -> london ===
+                                                                  QUERY PLAN                                                                  
+----------------------------------------------------------------------------------------------------------------------------------------------
+ Nested Loop Anti Join  (cost=17.43..37.48 rows=2 width=40) (actual time=0.769..1.443 rows=1 loops=1)
+   Buffers: shared hit=21
+   ->  Nested Loop  (cost=10.85..21.77 rows=2 width=40) (actual time=0.741..1.395 rows=2 loops=1)
+         Buffers: shared hit=8
+         ->  Function Scan on unnest t  (cost=0.00..0.02 rows=2 width=32) (actual time=0.014..0.014 rows=2 loops=1)
+         ->  Limit  (cost=10.85..10.85 rows=1 width=20) (actual time=0.688..0.688 rows=1 loops=2)
+               Buffers: shared hit=8
+               ->  Sort  (cost=10.85..10.86 rows=5 width=20) (actual time=0.687..0.687 rows=1 loops=2)
+                     Sort Key: (similarity(v.word, t.token)) DESC, v.row_count DESC
+                     Sort Method: quicksort  Memory: 25kB
+                     Buffers: shared hit=8
+                     ->  Seq Scan on search_vocabulary v  (cost=0.00..10.82 rows=5 width=20) (actual time=0.150..0.678 rows=2 loops=2)
+                           Filter: (word % t.token)
+                           Rows Removed by Filter: 544
+                           Buffers: shared hit=8
+   ->  Bitmap Heap Scan on search_vocabulary k  (cost=6.58..10.39 rows=3 width=8) (actual time=0.019..0.019 rows=0 loops=2)
+         Recheck Cond: (word ~~ (('%'::text || t.token) || '%'::text))
+         Heap Blocks: exact=1
+         Buffers: shared hit=13
+         ->  Bitmap Index Scan on search_vocabulary_word_trgm_idx  (cost=0.00..6.58 rows=3 width=0) (actual time=0.016..0.016 rows=0 loops=2)
+               Index Cond: (word ~~ (('%'::text || t.token) || '%'::text))
+               Buffers: shared hit=12
+ Planning:
+   Buffers: shared hit=148
+ Planning Time: 2.966 ms
+ Execution Time: 1.703 ms
+(26 rows)
+
+=== corrected strict match: london road ===
+                                                                                         QUERY PLAN                                                                                         
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=252.86..252.89 rows=10 width=78) (actual time=0.733..0.734 rows=10 loops=1)
+   Buffers: shared hit=49
+   ->  Sort  (cost=252.86..253.02 rows=61 width=78) (actual time=0.732..0.733 rows=10 loops=1)
+         Sort Key: ((lower(candidates.content) ~~ 'london road%'::text)) DESC, (word_similarity('london road'::text, candidates.content)) DESC, (length(candidates.content)), candidates.id
+         Sort Method: top-N heapsort  Memory: 27kB
+         Buffers: shared hit=49
+         ->  Subquery Scan on candidates  (cost=60.68..251.55 rows=61 width=78) (actual time=0.403..0.707 rows=32 loops=1)
+               Buffers: shared hit=49
+               ->  Limit  (cost=60.68..250.94 rows=61 width=37) (actual time=0.391..0.483 rows=32 loops=1)
+                     Buffers: shared hit=49
+                     ->  Bitmap Heap Scan on records  (cost=60.68..250.94 rows=61 width=37) (actual time=0.391..0.481 rows=32 loops=1)
+                           Recheck Cond: ((content ~~* '%london%'::text) AND (content ~~* '%road%'::text))
+                           Heap Blocks: exact=31
+                           Buffers: shared hit=49
+                           ->  Bitmap Index Scan on records_content_trgm_idx  (cost=0.00..60.67 rows=61 width=0) (actual time=0.382..0.382 rows=32 loops=1)
+                                 Index Cond: ((content ~~* '%london%'::text) AND (content ~~* '%road%'::text))
+                                 Buffers: shared hit=18
+ Planning:
+   Buffers: shared hit=1
+ Planning Time: 0.341 ms
+ Execution Time: 0.789 ms
+(21 rows)
+
+=== no match: qzxv ===
+                                                                                  QUERY PLAN                                                                                  
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=58.68..58.70 rows=10 width=78) (actual time=0.020..0.021 rows=0 loops=1)
+   Buffers: shared hit=5
+   ->  Sort  (cost=58.68..58.70 rows=10 width=78) (actual time=0.020..0.020 rows=0 loops=1)
+         Sort Key: ((lower(candidates.content) ~~ 'qzxv%'::text)) DESC, (word_similarity('qzxv'::text, candidates.content)) DESC, (length(candidates.content)), candidates.id
+         Sort Method: quicksort  Memory: 25kB
+         Buffers: shared hit=5
+         ->  Subquery Scan on candidates  (cost=21.54..58.51 rows=10 width=78) (actual time=0.017..0.018 rows=0 loops=1)
+               Buffers: shared hit=5
+               ->  Limit  (cost=21.54..58.41 rows=10 width=37) (actual time=0.017..0.017 rows=0 loops=1)
+                     Buffers: shared hit=5
+                     ->  Bitmap Heap Scan on records  (cost=21.54..58.41 rows=10 width=37) (actual time=0.017..0.017 rows=0 loops=1)
+                           Recheck Cond: (content ~~* '%qzxv%'::text)
+                           Buffers: shared hit=5
+                           ->  Bitmap Index Scan on records_content_trgm_idx  (cost=0.00..21.54 rows=10 width=0) (actual time=0.016..0.016 rows=0 loops=1)
+                                 Index Cond: (content ~~* '%qzxv%'::text)
+                                 Buffers: shared hit=5
+ Planning:
+   Buffers: shared hit=1
+ Planning Time: 0.218 ms
+ Execution Time: 0.040 ms
+(20 rows)
+

@@ -1,0 +1,10 @@
+{
+    "$schema": "https://raw.githubusercontent.com/laravel/pint/main/resources/pint-schema.json",
+    "preset": "laravel",
+    "rules": {
+        "no_superfluous_phpdoc_tags": false,
+        "phpdoc_align": {
+            "align": "left"
+        }
+    }
+}

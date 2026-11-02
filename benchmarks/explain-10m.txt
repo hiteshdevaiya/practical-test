@@ -1,0 +1,1310 @@
+Rows in records: 10,000,000
+
+==============================================================================
+lon  (3-character fragment)
+rows=10 corrected=none took_ms=2.80 db_ms=2.76 statements=1
+
+-- statement 1 (2.64 ms): WITH candidate_ids AS (SELECT record_id FROM record_words WHERE word >= ? AND word < ? LIMIT ?) 
+   Limit  (cost=542.29..542.31 rows=10 width=78) (actual time=1.927..1.930 rows=10 loops=1)
+     Buffers: shared hit=806
+     ->  Sort  (cost=542.29..542.79 rows=200 width=78) (actual time=1.927..1.928 rows=10 loops=1)
+           Sort Key: ((lower(r.content) ~~ 'lon%'::text)) DESC, (word_similarity('lon'::text, r.content)) DESC, (length(r.content)), r.id
+           Sort Method: top-N heapsort  Memory: 26kB
+           Buffers: shared hit=806
+           ->  Subquery Scan on r  (cost=1.00..537.97 rows=200 width=78) (actual time=0.055..1.830 rows=200 loops=1)
+                 Buffers: shared hit=806
+                 ->  Nested Loop  (cost=1.00..535.97 rows=200 width=37) (actual time=0.043..0.634 rows=200 loops=1)
+                       Buffers: shared hit=806
+                       ->  Limit  (cost=0.56..5.47 rows=200 width=8) (actual time=0.037..0.159 rows=200 loops=1)
+                             Buffers: shared hit=6
+                             ->  Index Only Scan using record_words_pkey on record_words  (cost=0.56..2571.95 rows=104919 width=8) (actual time=0.037..0.144 rows=200 loops=1)
+                                   Index Cond: ((word >= 'lon'::text) AND (word < 'loo'::text))
+                                   Heap Fetches: 0
+                                   Buffers: shared hit=6
+                       ->  Index Scan using records_pkey on records  (cost=0.43..2.65 rows=1 width=37) (actual time=0.002..0.002 rows=1 loops=200)
+                             Index Cond: (id = record_words.record_id)
+                             Buffers: shared hit=800
+   Planning:
+     Buffers: shared hit=8
+   Planning Time: 0.278 ms
+   Execution Time: 1.960 ms
+
+==============================================================================
+london roa  (two partial words (adjacent pair))
+rows=10 corrected=none took_ms=6.55 db_ms=6.52 statements=2
+
+-- statement 1 (0.51 ms): SELECT t.token, (SELECT coalesce(sum(v.row_count), 0) FROM search_vocabulary v WHERE v.wor
+   Function Scan on unnest t  (cost=0.00..11.78 rows=2 width=64) (actual time=0.035..0.051 rows=2 loops=1)
+     Buffers: shared hit=23
+     SubPlan 1
+       ->  Aggregate  (cost=5.87..5.88 rows=1 width=32) (actual time=0.021..0.022 rows=1 loops=2)
+             Buffers: shared hit=23
+             ->  Bitmap Heap Scan on search_vocabulary v  (cost=2.77..5.86 rows=3 width=8) (actual time=0.016..0.016 rows=2 loops=2)
+                   Recheck Cond: (word ~~ (t.token || '%'::text))
+                   Heap Blocks: exact=3
+                   Buffers: shared hit=23
+                   ->  Bitmap Index Scan on search_vocabulary_word_trgm_idx  (cost=0.00..2.77 rows=3 width=0) (actual time=0.013..0.013 rows=2 loops=2)
+                         Index Cond: (word ~~ (t.token || '%'::text))
+                         Buffers: shared hit=20
+   Planning:
+     Buffers: shared hit=1
+   Planning Time: 0.103 ms
+   Execution Time: 0.082 ms
+
+-- statement 2 (5.80 ms): WITH candidate_ids AS (SELECT record_id FROM ((WITH RECURSIVE firsts(w) AS ( (SELECT w1 FR
+   Limit  (cost=1222.47..1222.49 rows=10 width=78) (actual time=4.101..4.110 rows=10 loops=1)
+     Buffers: shared hit=1619
+     ->  Sort  (cost=1222.47..1223.47 rows=400 width=78) (actual time=4.100..4.107 rows=10 loops=1)
+           Sort Key: ((lower(r.content) ~~ 'london roa%'::text)) DESC, (word_similarity('london roa'::text, r.content)) DESC, (length(r.content)), r.id
+           Sort Method: top-N heapsort  Memory: 26kB
+           Buffers: shared hit=1619
+           ->  Subquery Scan on r  (cost=147.46..1213.82 rows=400 width=78) (actual time=0.478..3.969 rows=399 loops=1)
+                 Buffers: shared hit=1619
+                 ->  Nested Loop  (cost=147.46..1209.82 rows=400 width=37) (actual time=0.465..1.440 rows=399 loops=1)
+                       Buffers: shared hit=1619
+                       ->  HashAggregate  (cost=147.02..151.02 rows=400 width=8) (actual time=0.450..0.496 rows=399 loops=1)
+                             Group Key: pp.record_id
+                             Batches: 1  Memory Usage: 45kB
+                             Buffers: shared hit=23
+                             ->  Append  (cost=63.23..146.02 rows=400 width=8) (actual time=0.083..0.398 rows=400 loops=1)
+                                   Buffers: shared hit=23
+                                   ->  Limit  (cost=63.23..71.73 rows=200 width=8) (actual time=0.082..0.213 rows=200 loops=1)
+                                         Buffers: shared hit=11
+                                         CTE firsts
+                                           ->  Recursive Union  (cost=0.56..62.66 rows=101 width=32) (actual time=0.048..0.049 rows=1 loops=1)
+                                                 Buffers: shared hit=5
+                                                 ->  Limit  (cost=0.56..0.59 rows=1 width=6) (actual time=0.047..0.048 rows=1 loops=1)
+                                                       Buffers: shared hit=5
+                                                       ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs  (cost=0.56..2481.79 rows=96836 width=6) (actual time=0.047..0.047 rows=1 loops=1)
+                                                             Index Cond: ((w1 >= 'london'::text) AND (w1 < 'londoo'::text))
+                                                             Heap Fetches: 0
+                                                             Buffers: shared hit=5
+                                                 ->  WorkTable Scan on firsts f_2  (cost=0.00..6.11 rows=10 width=32) (never executed)
+                                                       Filter: (w IS NOT NULL)
+                                         ->  Nested Loop  (cost=0.56..851.07 rows=20000 width=8) (actual time=0.082..0.203 rows=200 loops=1)
+                                               Buffers: shared hit=11
+                                               ->  CTE Scan on firsts f  (cost=0.00..2.02 rows=100 width=32) (actual time=0.049..0.049 rows=1 loops=1)
+                                                     Filter: (w IS NOT NULL)
+                                                     Buffers: shared hit=5
+                                               ->  Limit  (cost=0.56..6.49 rows=200 width=8) (actual time=0.032..0.141 rows=200 loops=1)
+                                                     Buffers: shared hit=6
+                                                     ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs pp  (cost=0.56..14.28 rows=463 width=8) (actual time=0.031..0.125 rows=200 loops=1)
+                                                           Index Cond: ((w1 = f.w) AND (w2 >= 'roa'::text) AND (w2 < 'rob'::text))
+                                                           Heap Fetches: 0
+                                                           Buffers: shared hit=6
+                                   ->  Limit  (cost=63.23..72.29 rows=200 width=8) (actual time=0.053..0.159 rows=200 loops=1)
+                                         Buffers: shared hit=12
+                                         CTE firsts
+                                           ->  Recursive Union  (cost=0.56..62.66 rows=101 width=32) (actual time=0.034..0.035 rows=1 loops=1)
+                                                 Buffers: shared hit=5
+                                                 ->  Limit  (cost=0.56..0.59 rows=1 width=6) (actual time=0.033..0.034 rows=1 loops=1)
+                                                       Buffers: shared hit=5
+                                                       ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs record_word_pairs_1  (cost=0.56..8190.40 rows=319677 width=6) (actual time=0.033..0.033 rows=1 loops=1)
+                                                             Index Cond: ((w1 >= 'roa'::text) AND (w1 < 'rob'::text))
+                                                             Heap Fetches: 0
+                                                             Buffers: shared hit=5
+                                                 ->  WorkTable Scan on firsts f_3  (cost=0.00..6.11 rows=10 width=32) (never executed)
+                                                       Filter: (w IS NOT NULL)
+                                         ->  Nested Loop  (cost=0.56..594.27 rows=13100 width=8) (actual time=0.053..0.146 rows=200 loops=1)
+                                               Buffers: shared hit=12
+                                               ->  CTE Scan on firsts f_1  (cost=0.00..2.02 rows=100 width=32) (actual time=0.034..0.034 rows=1 loops=1)
+                                                     Filter: (w IS NOT NULL)
+                                                     Buffers: shared hit=5
+                                               ->  Limit  (cost=0.56..4.61 rows=131 width=8) (actual time=0.019..0.099 rows=200 loops=1)
+                                                     Buffers: shared hit=7
+                                                     ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs pp_1  (cost=0.56..4.61 rows=131 width=8) (actual time=0.018..0.088 rows=200 loops=1)
+                                                           Index Cond: ((w1 = f_1.w) AND (w2 >= 'london'::text) AND (w2 < 'londoo'::text))
+                                                           Heap Fetches: 0
+                                                           Buffers: shared hit=7
+                       ->  Index Scan using records_pkey on records  (cost=0.43..2.65 rows=1 width=37) (actual time=0.002..0.002 rows=1 loops=399)
+                             Index Cond: (id = pp.record_id)
+                             Buffers: shared hit=1596
+   Planning Time: 0.794 ms
+   Execution Time: 4.242 ms
+
+==============================================================================
+104 hawt  (house number followed by a partial word)
+rows=10 corrected=none took_ms=4.53 db_ms=4.50 statements=2
+
+-- statement 1 (0.40 ms): SELECT t.token, (SELECT coalesce(sum(v.row_count), 0) FROM search_vocabulary v WHERE v.wor
+   Function Scan on unnest t  (cost=0.00..11.78 rows=2 width=64) (actual time=0.022..0.040 rows=2 loops=1)
+     Buffers: shared hit=17
+     SubPlan 1
+       ->  Aggregate  (cost=5.87..5.88 rows=1 width=32) (actual time=0.016..0.017 rows=1 loops=2)
+             Buffers: shared hit=17
+             ->  Bitmap Heap Scan on search_vocabulary v  (cost=2.77..5.86 rows=3 width=8) (actual time=0.012..0.012 rows=0 loops=2)
+                   Recheck Cond: (word ~~ (t.token || '%'::text))
+                   Heap Blocks: exact=1
+                   Buffers: shared hit=17
+                   ->  Bitmap Index Scan on search_vocabulary_word_trgm_idx  (cost=0.00..2.77 rows=3 width=0) (actual time=0.010..0.010 rows=0 loops=2)
+                         Index Cond: (word ~~ (t.token || '%'::text))
+                         Buffers: shared hit=16
+   Planning:
+     Buffers: shared hit=1
+   Planning Time: 0.087 ms
+   Execution Time: 0.067 ms
+
+-- statement 2 (3.92 ms): WITH candidate_ids AS (SELECT record_id FROM ((WITH RECURSIVE firsts(w) AS ( (SELECT w1 FR
+   Limit  (cost=1010.28..1010.31 rows=10 width=78) (actual time=2.554..2.561 rows=10 loops=1)
+     Buffers: shared hit=826
+     ->  Sort  (cost=1010.28..1010.78 rows=200 width=78) (actual time=2.553..2.559 rows=10 loops=1)
+           Sort Key: ((lower(r.content) ~~ '104 hawt%'::text)) DESC, (word_similarity('104 hawt'::text, r.content)) DESC, (length(r.content)), r.id
+           Sort Method: top-N heapsort  Memory: 26kB
+           Buffers: shared hit=826
+           ->  Subquery Scan on r  (cost=471.89..1005.96 rows=200 width=78) (actual time=0.379..2.463 rows=198 loops=1)
+                 Buffers: shared hit=826
+                 ->  Nested Loop  (cost=471.89..1003.96 rows=200 width=37) (actual time=0.365..1.011 rows=198 loops=1)
+                       Buffers: shared hit=826
+                       ->  HashAggregate  (cost=471.46..473.46 rows=200 width=8) (actual time=0.353..0.378 rows=198 loops=1)
+                             Group Key: pp.record_id
+                             Batches: 1  Memory Usage: 40kB
+                             Buffers: shared hit=34
+                             ->  Append  (cost=63.23..470.96 rows=200 width=8) (actual time=0.087..0.329 rows=198 loops=1)
+                                   Buffers: shared hit=34
+                                   ->  Limit  (cost=63.23..234.43 rows=100 width=8) (actual time=0.087..0.249 rows=198 loops=1)
+                                         Buffers: shared hit=21
+                                         CTE firsts
+                                           ->  Recursive Union  (cost=0.56..62.66 rows=101 width=32) (actual time=0.062..0.082 rows=2 loops=1)
+                                                 Buffers: shared hit=9
+                                                 ->  Limit  (cost=0.56..0.59 rows=1 width=6) (actual time=0.061..0.062 rows=1 loops=1)
+                                                       Buffers: shared hit=5
+                                                       ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs record_word_pairs_1  (cost=0.56..978.41 rows=38167 width=6) (actual time=0.061..0.061 rows=1 loops=1)
+                                                             Index Cond: ((w1 >= '104'::text) AND (w1 < '105'::text))
+                                                             Heap Fetches: 0
+                                                             Buffers: shared hit=5
+                                                 ->  WorkTable Scan on firsts f_2  (cost=0.00..6.11 rows=10 width=32) (actual time=0.008..0.008 rows=0 loops=2)
+                                                       Filter: (w IS NOT NULL)
+                                                       Rows Removed by Filter: 0
+                                                       Buffers: shared hit=4
+                                                       SubPlan 1
+                                                         ->  Limit  (cost=0.56..0.59 rows=1 width=6) (actual time=0.010..0.010 rows=0 loops=1)
+                                                               Buffers: shared hit=4
+                                                               ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs  (cost=0.56..4484.06 rows=175005 width=6) (actual time=0.009..0.010 rows=0 loops=1)
+                                                                     Index Cond: ((w1 > f_2.w) AND (w1 < '105'::text))
+                                                                     Heap Fetches: 0
+                                                                     Buffers: shared hit=4
+                                         ->  Nested Loop  (cost=0.56..171.77 rows=100 width=8) (actual time=0.087..0.237 rows=198 loops=1)
+                                               Buffers: shared hit=21
+                                               ->  CTE Scan on firsts f  (cost=0.00..2.02 rows=100 width=32) (actual time=0.063..0.082 rows=1 loops=1)
+                                                     Filter: (w IS NOT NULL)
+                                                     Rows Removed by Filter: 1
+                                                     Buffers: shared hit=9
+                                               ->  Limit  (cost=0.56..1.69 rows=1 width=8) (actual time=0.023..0.140 rows=198 loops=1)
+                                                     Buffers: shared hit=12
+                                                     ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs pp  (cost=0.56..1.69 rows=1 width=8) (actual time=0.023..0.129 rows=198 loops=1)
+                                                           Index Cond: ((w1 = f.w) AND (w2 >= 'hawt'::text) AND (w2 < 'hawu'::text))
+                                                           Heap Fetches: 0
+                                                           Buffers: shared hit=12
+                                   ->  Limit  (cost=64.32..235.53 rows=100 width=8) (actual time=0.065..0.066 rows=0 loops=1)
+                                         Buffers: shared hit=13
+                                         CTE firsts
+                                           ->  Recursive Union  (cost=0.56..63.76 rows=101 width=32) (actual time=0.034..0.049 rows=2 loops=1)
+                                                 Buffers: shared hit=9
+                                                 ->  Limit  (cost=0.56..1.69 rows=1 width=6) (actual time=0.034..0.034 rows=1 loops=1)
+                                                       Buffers: shared hit=5
+                                                       ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs record_word_pairs_3  (cost=0.56..1.69 rows=1 width=6) (actual time=0.033..0.034 rows=1 loops=1)
+                                                             Index Cond: ((w1 >= 'hawt'::text) AND (w1 < 'hawu'::text))
+                                                             Heap Fetches: 0
+                                                             Buffers: shared hit=5
+                                                 ->  WorkTable Scan on firsts f_3  (cost=0.00..6.11 rows=10 width=32) (actual time=0.007..0.007 rows=0 loops=2)
+                                                       Filter: (w IS NOT NULL)
+                                                       Rows Removed by Filter: 0
+                                                       Buffers: shared hit=4
+                                                       SubPlan 3
+                                                         ->  Limit  (cost=0.56..0.59 rows=1 width=6) (actual time=0.012..0.012 rows=0 loops=1)
+                                                               Buffers: shared hit=4
+                                                               ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs record_word_pairs_2  (cost=0.56..4484.06 rows=175005 width=6) (actual time=0.011..0.011 rows=0 loops=1)
+                                                                     Index Cond: ((w1 > f_3.w) AND (w1 < 'hawu'::text))
+                                                                     Heap Fetches: 0
+                                                                     Buffers: shared hit=4
+                                         ->  Nested Loop  (cost=0.56..171.77 rows=100 width=8) (actual time=0.064..0.065 rows=0 loops=1)
+                                               Buffers: shared hit=13
+                                               ->  CTE Scan on firsts f_1  (cost=0.00..2.02 rows=100 width=32) (actual time=0.034..0.049 rows=1 loops=1)
+                                                     Filter: (w IS NOT NULL)
+                                                     Rows Removed by Filter: 1
+                                                     Buffers: shared hit=9
+                                               ->  Limit  (cost=0.56..1.69 rows=1 width=8) (actual time=0.014..0.015 rows=0 loops=1)
+                                                     Buffers: shared hit=4
+                                                     ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs pp_1  (cost=0.56..1.69 rows=1 width=8) (actual time=0.014..0.014 rows=0 loops=1)
+                                                           Index Cond: ((w1 = f_1.w) AND (w2 >= '104'::text) AND (w2 < '105'::text))
+                                                           Heap Fetches: 0
+                                                           Buffers: shared hit=4
+                       ->  Index Scan using records_pkey on records  (cost=0.43..2.65 rows=1 width=37) (actual time=0.003..0.003 rows=1 loops=198)
+                             Index Cond: (id = pp.record_id)
+                             Buffers: shared hit=792
+   Planning Time: 0.646 ms
+   Execution Time: 2.710 ms
+
+==============================================================================
+church lane bri  (three tokens (pair plus filter))
+rows=10 corrected=none took_ms=27.96 db_ms=27.93 statements=3
+
+-- statement 1 (0.75 ms): SELECT t.token, (SELECT coalesce(sum(v.row_count), 0) FROM search_vocabulary v WHERE v.wor
+   Function Scan on unnest t  (cost=0.00..17.67 rows=3 width=64) (actual time=0.071..0.116 rows=3 loops=1)
+     Buffers: shared hit=34
+     SubPlan 1
+       ->  Aggregate  (cost=5.87..5.88 rows=1 width=32) (actual time=0.034..0.034 rows=1 loops=3)
+             Buffers: shared hit=34
+             ->  Bitmap Heap Scan on search_vocabulary v  (cost=2.77..5.86 rows=3 width=8) (actual time=0.024..0.026 rows=3 loops=3)
+                   Recheck Cond: (word ~~ (t.token || '%'::text))
+                   Heap Blocks: exact=5
+                   Buffers: shared hit=34
+                   ->  Bitmap Index Scan on search_vocabulary_word_trgm_idx  (cost=0.00..2.77 rows=3 width=0) (actual time=0.019..0.019 rows=3 loops=3)
+                         Index Cond: (word ~~ (t.token || '%'::text))
+                         Buffers: shared hit=29
+   Planning:
+     Buffers: shared hit=1
+   Planning Time: 0.179 ms
+   Execution Time: 0.172 ms
+
+-- statement 2 (2.30 ms): WITH candidate_ids AS (SELECT record_id FROM ((WITH RECURSIVE firsts(w) AS ( (SELECT w1 FR
+   Limit  (cost=1629.94..1629.97 rows=10 width=78) (actual time=0.428..0.432 rows=0 loops=1)
+     Buffers: shared hit=68
+     ->  Sort  (cost=1629.94..1630.69 rows=300 width=78) (actual time=0.428..0.432 rows=0 loops=1)
+           Sort Key: ((lower(r.content) ~~ 'church lane bri%'::text)) DESC, (word_similarity('church lane bri'::text, r.content)) DESC, (length(r.content)), r.id
+           Sort Method: quicksort  Memory: 25kB
+           Buffers: shared hit=68
+           ->  Subquery Scan on r  (cost=823.24..1623.46 rows=300 width=78) (actual time=0.422..0.426 rows=0 loops=1)
+                 Buffers: shared hit=68
+                 ->  Nested Loop  (cost=823.24..1620.46 rows=300 width=37) (actual time=0.422..0.426 rows=0 loops=1)
+                       Buffers: shared hit=68
+                       ->  HashAggregate  (cost=822.81..825.81 rows=300 width=8) (actual time=0.421..0.425 rows=0 loops=1)
+                             Group Key: record_word_pairs.record_id
+                             Batches: 1  Memory Usage: 37kB
+                             Buffers: shared hit=68
+                             ->  Append  (cost=64.89..822.06 rows=300 width=8) (actual time=0.420..0.423 rows=0 loops=1)
+                                   Buffers: shared hit=68
+                                   ->  Limit  (cost=64.89..415.38 rows=200 width=8) (actual time=0.110..0.112 rows=0 loops=1)
+                                         Buffers: shared hit=22
+                                         CTE firsts
+                                           ->  Recursive Union  (cost=0.56..63.76 rows=101 width=32) (actual time=0.033..0.076 rows=3 loops=1)
+                                                 Buffers: shared hit=14
+                                                 ->  Limit  (cost=0.56..1.69 rows=1 width=6) (actual time=0.032..0.033 rows=1 loops=1)
+                                                       Buffers: shared hit=5
+                                                       ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs record_word_pairs_3  (cost=0.56..1.69 rows=1 width=6) (actual time=0.032..0.032 rows=1 loops=1)
+                                                             Index Cond: ((w1 >= 'church'::text) AND (w1 < 'churci'::text))
+                                                             Heap Fetches: 0
+                                                             Buffers: shared hit=5
+                                                 ->  WorkTable Scan on firsts f_2  (cost=0.00..6.11 rows=10 width=32) (actual time=0.013..0.013 rows=1 loops=3)
+                                                       Filter: (w IS NOT NULL)
+                                                       Rows Removed by Filter: 0
+                                                       Buffers: shared hit=9
+                                                       SubPlan 1
+                                                         ->  Limit  (cost=0.56..0.59 rows=1 width=6) (actual time=0.017..0.017 rows=0 loops=2)
+                                                               Buffers: shared hit=9
+                                                               ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs record_word_pairs_2  (cost=0.56..4484.06 rows=175005 width=6) (actual time=0.016..0.016 rows=0 loops=2)
+                                                                     Index Cond: ((w1 > f_2.w) AND (w1 < 'churci'::text))
+                                                                     Heap Fetches: 0
+                                                                     Buffers: shared hit=9
+                                         ->  Nested Loop  (cost=1.13..35050.14 rows=20000 width=8) (actual time=0.109..0.110 rows=0 loops=1)
+                                               Buffers: shared hit=22
+                                               ->  CTE Scan on firsts f  (cost=0.00..2.02 rows=100 width=32) (actual time=0.035..0.078 rows=2 loops=1)
+                                                     Filter: (w IS NOT NULL)
+                                                     Rows Removed by Filter: 1
+                                                     Buffers: shared hit=14
+                                               ->  Limit  (cost=1.13..348.48 rows=200 width=8) (actual time=0.015..0.015 rows=0 loops=2)
+                                                     Buffers: shared hit=8
+                                                     ->  Nested Loop  (cost=1.13..421.43 rows=242 width=8) (actual time=0.015..0.015 rows=0 loops=2)
+                                                           Buffers: shared hit=8
+                                                           ->  Limit  (cost=0.56..8.21 rows=242 width=8) (actual time=0.015..0.015 rows=0 loops=2)
+                                                                 Buffers: shared hit=8
+                                                                 ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs  (cost=0.56..8.21 rows=242 width=8) (actual time=0.014..0.014 rows=0 loops=2)
+                                                                       Index Cond: ((w1 = f.w) AND (w2 >= 'bri'::text) AND (w2 < 'brj'::text))
+                                                                       Heap Fetches: 0
+                                                                       Buffers: shared hit=8
+                                                           ->  Limit  (cost=0.56..1.69 rows=1 width=4) (never executed)
+                                                                 ->  Index Only Scan using record_words_record_idx on record_words x0  (cost=0.56..1.69 rows=1 width=4) (never executed)
+                                                                       Index Cond: ((record_id = record_word_pairs.record_id) AND (word >= 'lane'::text) AND (word < 'lanf'::text))
+                                                                       Heap Fetches: 0
+                                   ->  Limit  (cost=63.79..405.18 rows=100 width=8) (actual time=0.309..0.310 rows=0 loops=1)
+                                         Buffers: shared hit=46
+                                         CTE firsts
+                                           ->  Recursive Union  (cost=0.56..62.66 rows=101 width=32) (actual time=0.024..0.244 rows=6 loops=1)
+                                                 Buffers: shared hit=26
+                                                 ->  Limit  (cost=0.56..0.59 rows=1 width=6) (actual time=0.023..0.023 rows=1 loops=1)
+                                                       Buffers: shared hit=5
+                                                       ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs record_word_pairs_5  (cost=0.56..3588.24 rows=140004 width=6) (actual time=0.023..0.023 rows=1 loops=1)
+                                                             Index Cond: ((w1 >= 'bri'::text) AND (w1 < 'brj'::text))
+                                                             Heap Fetches: 0
+                                                             Buffers: shared hit=5
+                                                 ->  WorkTable Scan on firsts f_3  (cost=0.00..6.11 rows=10 width=32) (actual time=0.036..0.036 rows=1 loops=6)
+                                                       Filter: (w IS NOT NULL)
+                                                       Rows Removed by Filter: 0
+                                                       Buffers: shared hit=21
+                                                       SubPlan 3
+                                                         ->  Limit  (cost=0.56..0.59 rows=1 width=6) (actual time=0.042..0.042 rows=1 loops=5)
+                                                               Buffers: shared hit=21
+                                                               ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs record_word_pairs_4  (cost=0.56..4484.06 rows=175005 width=6) (actual time=0.042..0.042 rows=1 loops=5)
+                                                                     Index Cond: ((w1 > f_3.w) AND (w1 < 'brj'::text))
+                                                                     Heap Fetches: 0
+                                                                     Buffers: shared hit=21
+                                         ->  Nested Loop  (cost=1.13..342.52 rows=100 width=8) (actual time=0.309..0.309 rows=0 loops=1)
+                                               Buffers: shared hit=46
+                                               ->  CTE Scan on firsts f_1  (cost=0.00..2.02 rows=100 width=32) (actual time=0.024..0.246 rows=5 loops=1)
+                                                     Filter: (w IS NOT NULL)
+                                                     Rows Removed by Filter: 1
+                                                     Buffers: shared hit=26
+                                               ->  Limit  (cost=1.13..3.39 rows=1 width=8) (actual time=0.012..0.012 rows=0 loops=5)
+                                                     Buffers: shared hit=20
+                                                     ->  Nested Loop  (cost=1.13..3.39 rows=1 width=8) (actual time=0.012..0.012 rows=0 loops=5)
+                                                           Buffers: shared hit=20
+                                                           ->  Limit  (cost=0.56..1.69 rows=1 width=8) (actual time=0.012..0.012 rows=0 loops=5)
+                                                                 Buffers: shared hit=20
+                                                                 ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs record_word_pairs_1  (cost=0.56..1.69 rows=1 width=8) (actual time=0.012..0.012 rows=0 loops=5)
+                                                                       Index Cond: ((w1 = f_1.w) AND (w2 >= 'church'::text) AND (w2 < 'churci'::text))
+                                                                       Heap Fetches: 0
+                                                                       Buffers: shared hit=20
+                                                           ->  Limit  (cost=0.56..1.69 rows=1 width=4) (never executed)
+                                                                 ->  Index Only Scan using record_words_record_idx on record_words x0_1  (cost=0.56..1.69 rows=1 width=4) (never executed)
+                                                                       Index Cond: ((record_id = record_word_pairs_1.record_id) AND (word >= 'lane'::text) AND (word < 'lanf'::text))
+                                                                       Heap Fetches: 0
+                       ->  Index Scan using records_pkey on records  (cost=0.43..2.65 rows=1 width=37) (never executed)
+                             Index Cond: (id = record_word_pairs.record_id)
+   Planning Time: 1.120 ms
+   Execution Time: 0.612 ms
+
+-- statement 3 (24.39 ms): WITH candidate_ids AS (SELECT record_id FROM ((WITH RECURSIVE firsts(w) AS ( (SELECT w1 FR
+   Limit  (cost=1629.74..1629.77 rows=10 width=78) (actual time=19.655..19.664 rows=10 loops=1)
+     Buffers: shared hit=16291
+     ->  Sort  (cost=1629.74..1630.49 rows=300 width=78) (actual time=19.654..19.662 rows=10 loops=1)
+           Sort Key: ((lower(r.content) ~~ 'church lane bri%'::text)) DESC, (word_similarity('church lane bri'::text, r.content)) DESC, (length(r.content)), r.id
+           Sort Method: top-N heapsort  Memory: 27kB
+           Buffers: shared hit=16291
+           ->  Subquery Scan on r  (cost=823.04..1623.26 rows=300 width=78) (actual time=18.890..19.617 rows=52 loops=1)
+                 Buffers: shared hit=16291
+                 ->  Nested Loop  (cost=823.04..1620.26 rows=300 width=37) (actual time=18.861..19.079 rows=52 loops=1)
+                       Buffers: shared hit=16291
+                       ->  HashAggregate  (cost=822.61..825.61 rows=300 width=8) (actual time=18.847..18.863 rows=52 loops=1)
+                             Group Key: record_word_pairs.record_id
+                             Batches: 1  Memory Usage: 37kB
+                             Buffers: shared hit=16083
+                             ->  Append  (cost=64.89..821.86 rows=300 width=8) (actual time=0.360..18.820 rows=52 loops=1)
+                                   Buffers: shared hit=16083
+                                   ->  Limit  (cost=64.89..415.18 rows=200 width=8) (actual time=0.359..18.682 rows=52 loops=1)
+                                         Buffers: shared hit=16070
+                                         CTE firsts
+                                           ->  Recursive Union  (cost=0.56..63.76 rows=101 width=32) (actual time=0.032..0.115 rows=3 loops=1)
+                                                 Buffers: shared hit=14
+                                                 ->  Limit  (cost=0.56..1.69 rows=1 width=6) (actual time=0.031..0.032 rows=1 loops=1)
+                                                       Buffers: shared hit=5
+                                                       ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs record_word_pairs_3  (cost=0.56..1.69 rows=1 width=6) (actual time=0.030..0.030 rows=1 loops=1)
+                                                             Index Cond: ((w1 >= 'church'::text) AND (w1 < 'churci'::text))
+                                                             Heap Fetches: 0
+                                                             Buffers: shared hit=5
+                                                 ->  WorkTable Scan on firsts f_2  (cost=0.00..6.11 rows=10 width=32) (actual time=0.022..0.023 rows=1 loops=3)
+                                                       Filter: (w IS NOT NULL)
+                                                       Rows Removed by Filter: 0
+                                                       Buffers: shared hit=9
+                                                       SubPlan 1
+                                                         ->  Limit  (cost=0.56..0.59 rows=1 width=6) (actual time=0.027..0.027 rows=0 loops=2)
+                                                               Buffers: shared hit=9
+                                                               ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs record_word_pairs_2  (cost=0.56..4484.06 rows=175005 width=6) (actual time=0.026..0.026 rows=0 loops=2)
+                                                                     Index Cond: ((w1 > f_2.w) AND (w1 < 'churci'::text))
+                                                                     Heap Fetches: 0
+                                                                     Buffers: shared hit=9
+                                         ->  Nested Loop  (cost=1.13..35030.18 rows=20000 width=8) (actual time=0.359..18.671 rows=52 loops=1)
+                                               Buffers: shared hit=16070
+                                               ->  CTE Scan on firsts f  (cost=0.00..2.02 rows=100 width=32) (actual time=0.033..0.118 rows=2 loops=1)
+                                                     Filter: (w IS NOT NULL)
+                                                     Rows Removed by Filter: 1
+                                                     Buffers: shared hit=14
+                                               ->  Limit  (cost=1.13..348.28 rows=200 width=8) (actual time=0.337..9.270 rows=26 loops=2)
+                                                     Buffers: shared hit=16056
+                                                     ->  Nested Loop  (cost=1.13..825.62 rows=475 width=8) (actual time=0.337..9.266 rows=26 loops=2)
+                                                           Buffers: shared hit=16056
+                                                           ->  Limit  (cost=0.56..14.55 rows=475 width=8) (actual time=0.037..1.039 rows=2000 loops=2)
+                                                                 Buffers: shared hit=42
+                                                                 ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs  (cost=0.56..14.55 rows=475 width=8) (actual time=0.036..0.907 rows=2000 loops=2)
+                                                                       Index Cond: ((w1 = f.w) AND (w2 >= 'lane'::text) AND (w2 < 'lanf'::text))
+                                                                       Heap Fetches: 0
+                                                                       Buffers: shared hit=42
+                                                           ->  Limit  (cost=0.56..1.69 rows=1 width=4) (actual time=0.004..0.004 rows=0 loops=4000)
+                                                                 Buffers: shared hit=16014
+                                                                 ->  Index Only Scan using record_words_record_idx on record_words x0  (cost=0.56..1.69 rows=1 width=4) (actual time=0.004..0.004 rows=0 loops=4000)
+                                                                       Index Cond: ((record_id = record_word_pairs.record_id) AND (word >= 'bri'::text) AND (word < 'brj'::text))
+                                                                       Heap Fetches: 0
+                                                                       Buffers: shared hit=16014
+                                   ->  Limit  (cost=63.79..405.18 rows=100 width=8) (actual time=0.123..0.126 rows=0 loops=1)
+                                         Buffers: shared hit=13
+                                         CTE firsts
+                                           ->  Recursive Union  (cost=0.56..62.66 rows=101 width=32) (actual time=0.065..0.091 rows=2 loops=1)
+                                                 Buffers: shared hit=9
+                                                 ->  Limit  (cost=0.56..0.59 rows=1 width=6) (actual time=0.064..0.064 rows=1 loops=1)
+                                                       Buffers: shared hit=5
+                                                       ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs record_word_pairs_5  (cost=0.56..8699.27 rows=339510 width=6) (actual time=0.063..0.064 rows=1 loops=1)
+                                                             Index Cond: ((w1 >= 'lane'::text) AND (w1 < 'lanf'::text))
+                                                             Heap Fetches: 0
+                                                             Buffers: shared hit=5
+                                                 ->  WorkTable Scan on firsts f_3  (cost=0.00..6.11 rows=10 width=32) (actual time=0.012..0.012 rows=0 loops=2)
+                                                       Filter: (w IS NOT NULL)
+                                                       Rows Removed by Filter: 0
+                                                       Buffers: shared hit=4
+                                                       SubPlan 3
+                                                         ->  Limit  (cost=0.56..0.59 rows=1 width=6) (actual time=0.015..0.015 rows=0 loops=1)
+                                                               Buffers: shared hit=4
+                                                               ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs record_word_pairs_4  (cost=0.56..4484.06 rows=175005 width=6) (actual time=0.013..0.013 rows=0 loops=1)
+                                                                     Index Cond: ((w1 > f_3.w) AND (w1 < 'lanf'::text))
+                                                                     Heap Fetches: 0
+                                                                     Buffers: shared hit=4
+                                         ->  Nested Loop  (cost=1.13..342.52 rows=100 width=8) (actual time=0.122..0.124 rows=0 loops=1)
+                                               Buffers: shared hit=13
+                                               ->  CTE Scan on firsts f_1  (cost=0.00..2.02 rows=100 width=32) (actual time=0.066..0.092 rows=1 loops=1)
+                                                     Filter: (w IS NOT NULL)
+                                                     Rows Removed by Filter: 1
+                                                     Buffers: shared hit=9
+                                               ->  Limit  (cost=1.13..3.39 rows=1 width=8) (actual time=0.029..0.030 rows=0 loops=1)
+                                                     Buffers: shared hit=4
+                                                     ->  Nested Loop  (cost=1.13..3.39 rows=1 width=8) (actual time=0.028..0.029 rows=0 loops=1)
+                                                           Buffers: shared hit=4
+                                                           ->  Limit  (cost=0.56..1.69 rows=1 width=8) (actual time=0.028..0.028 rows=0 loops=1)
+                                                                 Buffers: shared hit=4
+                                                                 ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs record_word_pairs_1  (cost=0.56..1.69 rows=1 width=8) (actual time=0.027..0.027 rows=0 loops=1)
+                                                                       Index Cond: ((w1 = f_1.w) AND (w2 >= 'church'::text) AND (w2 < 'churci'::text))
+                                                                       Heap Fetches: 0
+                                                                       Buffers: shared hit=4
+                                                           ->  Limit  (cost=0.56..1.69 rows=1 width=4) (never executed)
+                                                                 ->  Index Only Scan using record_words_record_idx on record_words x0_1  (cost=0.56..1.69 rows=1 width=4) (never executed)
+                                                                       Index Cond: ((record_id = record_word_pairs_1.record_id) AND (word >= 'bri'::text) AND (word < 'brj'::text))
+                                                                       Heap Fetches: 0
+                       ->  Index Scan using records_pkey on records  (cost=0.43..2.65 rows=1 width=37) (actual time=0.004..0.004 rows=1 loops=52)
+                             Index Cond: (id = record_word_pairs.record_id)
+                             Buffers: shared hit=208
+   Planning Time: 1.105 ms
+   Execution Time: 19.873 ms
+
+==============================================================================
+leeds greenwich  (tokens in reverse order and not adjacent)
+rows=0 corrected=none took_ms=43.48 db_ms=41.98 statements=6
+
+-- statement 1 (0.60 ms): SELECT t.token, (SELECT coalesce(sum(v.row_count), 0) FROM search_vocabulary v WHERE v.wor
+   Function Scan on unnest t  (cost=0.00..11.78 rows=2 width=64) (actual time=0.044..0.077 rows=2 loops=1)
+     Buffers: shared hit=32
+     SubPlan 1
+       ->  Aggregate  (cost=5.87..5.88 rows=1 width=32) (actual time=0.034..0.034 rows=1 loops=2)
+             Buffers: shared hit=32
+             ->  Bitmap Heap Scan on search_vocabulary v  (cost=2.77..5.86 rows=3 width=8) (actual time=0.026..0.027 rows=1 loops=2)
+                   Recheck Cond: (word ~~ (t.token || '%'::text))
+                   Heap Blocks: exact=2
+                   Buffers: shared hit=32
+                   ->  Bitmap Index Scan on search_vocabulary_word_trgm_idx  (cost=0.00..2.77 rows=3 width=0) (actual time=0.022..0.022 rows=1 loops=2)
+                         Index Cond: (word ~~ (t.token || '%'::text))
+                         Buffers: shared hit=30
+   Planning:
+     Buffers: shared hit=1
+   Planning Time: 0.236 ms
+   Execution Time: 0.118 ms
+
+-- statement 2 (2.16 ms): WITH candidate_ids AS (SELECT record_id FROM ((WITH RECURSIVE firsts(w) AS ( (SELECT w1 FR
+   Limit  (cost=1011.38..1011.40 rows=10 width=78) (actual time=0.242..0.246 rows=0 loops=1)
+     Buffers: shared hit=26
+     ->  Sort  (cost=1011.38..1011.88 rows=200 width=78) (actual time=0.241..0.245 rows=0 loops=1)
+           Sort Key: ((lower(r.content) ~~ 'leeds greenwich%'::text)) DESC, (word_similarity('leeds greenwich'::text, r.content)) DESC, (length(r.content)), r.id
+           Sort Method: quicksort  Memory: 25kB
+           Buffers: shared hit=26
+           ->  Subquery Scan on r  (cost=472.99..1007.05 rows=200 width=78) (actual time=0.235..0.239 rows=0 loops=1)
+                 Buffers: shared hit=26
+                 ->  Nested Loop  (cost=472.99..1005.05 rows=200 width=37) (actual time=0.234..0.238 rows=0 loops=1)
+                       Buffers: shared hit=26
+                       ->  HashAggregate  (cost=472.55..474.55 rows=200 width=8) (actual time=0.234..0.237 rows=0 loops=1)
+                             Group Key: pp.record_id
+                             Batches: 1  Memory Usage: 40kB
+                             Buffers: shared hit=26
+                             ->  Append  (cost=64.32..472.05 rows=200 width=8) (actual time=0.232..0.235 rows=0 loops=1)
+                                   Buffers: shared hit=26
+                                   ->  Limit  (cost=64.32..235.53 rows=100 width=8) (actual time=0.138..0.139 rows=0 loops=1)
+                                         Buffers: shared hit=13
+                                         CTE firsts
+                                           ->  Recursive Union  (cost=0.56..63.76 rows=101 width=32) (actual time=0.084..0.113 rows=2 loops=1)
+                                                 Buffers: shared hit=9
+                                                 ->  Limit  (cost=0.56..1.69 rows=1 width=6) (actual time=0.083..0.083 rows=1 loops=1)
+                                                       Buffers: shared hit=5
+                                                       ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs record_word_pairs_1  (cost=0.56..1.69 rows=1 width=6) (actual time=0.082..0.082 rows=1 loops=1)
+                                                             Index Cond: ((w1 >= 'leeds'::text) AND (w1 < 'leedt'::text))
+                                                             Heap Fetches: 0
+                                                             Buffers: shared hit=5
+                                                 ->  WorkTable Scan on firsts f_2  (cost=0.00..6.11 rows=10 width=32) (actual time=0.012..0.013 rows=0 loops=2)
+                                                       Filter: (w IS NOT NULL)
+                                                       Rows Removed by Filter: 0
+                                                       Buffers: shared hit=4
+                                                       SubPlan 1
+                                                         ->  Limit  (cost=0.56..0.59 rows=1 width=6) (actual time=0.019..0.019 rows=0 loops=1)
+                                                               Buffers: shared hit=4
+                                                               ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs  (cost=0.56..4484.06 rows=175005 width=6) (actual time=0.018..0.018 rows=0 loops=1)
+                                                                     Index Cond: ((w1 > f_2.w) AND (w1 < 'leedt'::text))
+                                                                     Heap Fetches: 0
+                                                                     Buffers: shared hit=4
+                                         ->  Nested Loop  (cost=0.56..171.77 rows=100 width=8) (actual time=0.137..0.138 rows=0 loops=1)
+                                               Buffers: shared hit=13
+                                               ->  CTE Scan on firsts f  (cost=0.00..2.02 rows=100 width=32) (actual time=0.086..0.115 rows=1 loops=1)
+                                                     Filter: (w IS NOT NULL)
+                                                     Rows Removed by Filter: 1
+                                                     Buffers: shared hit=9
+                                               ->  Limit  (cost=0.56..1.69 rows=1 width=8) (actual time=0.021..0.021 rows=0 loops=1)
+                                                     Buffers: shared hit=4
+                                                     ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs pp  (cost=0.56..1.69 rows=1 width=8) (actual time=0.020..0.020 rows=0 loops=1)
+                                                           Index Cond: ((w1 = f.w) AND (w2 >= 'greenwich'::text) AND (w2 < 'greenwici'::text))
+                                                           Heap Fetches: 0
+                                                           Buffers: shared hit=4
+                                   ->  Limit  (cost=64.32..235.53 rows=100 width=8) (actual time=0.093..0.094 rows=0 loops=1)
+                                         Buffers: shared hit=13
+                                         CTE firsts
+                                           ->  Recursive Union  (cost=0.56..63.76 rows=101 width=32) (actual time=0.047..0.074 rows=2 loops=1)
+                                                 Buffers: shared hit=9
+                                                 ->  Limit  (cost=0.56..1.69 rows=1 width=6) (actual time=0.047..0.047 rows=1 loops=1)
+                                                       Buffers: shared hit=5
+                                                       ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs record_word_pairs_3  (cost=0.56..1.69 rows=1 width=6) (actual time=0.047..0.047 rows=1 loops=1)
+                                                             Index Cond: ((w1 >= 'greenwich'::text) AND (w1 < 'greenwici'::text))
+                                                             Heap Fetches: 0
+                                                             Buffers: shared hit=5
+                                                 ->  WorkTable Scan on firsts f_3  (cost=0.00..6.11 rows=10 width=32) (actual time=0.012..0.012 rows=0 loops=2)
+                                                       Filter: (w IS NOT NULL)
+                                                       Rows Removed by Filter: 0
+                                                       Buffers: shared hit=4
+                                                       SubPlan 3
+                                                         ->  Limit  (cost=0.56..0.59 rows=1 width=6) (actual time=0.020..0.020 rows=0 loops=1)
+                                                               Buffers: shared hit=4
+                                                               ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs record_word_pairs_2  (cost=0.56..4484.06 rows=175005 width=6) (actual time=0.019..0.019 rows=0 loops=1)
+                                                                     Index Cond: ((w1 > f_3.w) AND (w1 < 'greenwici'::text))
+                                                                     Heap Fetches: 0
+                                                                     Buffers: shared hit=4
+                                         ->  Nested Loop  (cost=0.56..171.77 rows=100 width=8) (actual time=0.093..0.093 rows=0 loops=1)
+                                               Buffers: shared hit=13
+                                               ->  CTE Scan on firsts f_1  (cost=0.00..2.02 rows=100 width=32) (actual time=0.048..0.075 rows=1 loops=1)
+                                                     Filter: (w IS NOT NULL)
+                                                     Rows Removed by Filter: 1
+                                                     Buffers: shared hit=9
+                                               ->  Limit  (cost=0.56..1.69 rows=1 width=8) (actual time=0.017..0.017 rows=0 loops=1)
+                                                     Buffers: shared hit=4
+                                                     ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs pp_1  (cost=0.56..1.69 rows=1 width=8) (actual time=0.016..0.017 rows=0 loops=1)
+                                                           Index Cond: ((w1 = f_1.w) AND (w2 >= 'leeds'::text) AND (w2 < 'leedt'::text))
+                                                           Heap Fetches: 0
+                                                           Buffers: shared hit=4
+                       ->  Index Scan using records_pkey on records  (cost=0.43..2.65 rows=1 width=37) (never executed)
+                             Index Cond: (id = pp.record_id)
+   Planning Time: 0.727 ms
+   Execution Time: 0.422 ms
+
+-- statement 3 (7.97 ms): WITH candidate_ids AS (SELECT record_id FROM ( SELECT w.record_id 
+   Limit  (cost=6.08..6.09 rows=1 width=78) (actual time=7.864..7.866 rows=0 loops=1)
+     Buffers: shared hit=8013
+     ->  Sort  (cost=6.08..6.09 rows=1 width=78) (actual time=7.864..7.865 rows=0 loops=1)
+           Sort Key: ((lower(r.content) ~~ 'leeds greenwich%'::text)) DESC, (word_similarity('leeds greenwich'::text, r.content)) DESC, (length(r.content)), r.id
+           Sort Method: quicksort  Memory: 25kB
+           Buffers: shared hit=8013
+           ->  Subquery Scan on r  (cost=3.84..6.07 rows=1 width=78) (actual time=7.857..7.859 rows=0 loops=1)
+                 Buffers: shared hit=8013
+                 ->  Nested Loop  (cost=3.84..6.06 rows=1 width=37) (actual time=7.857..7.858 rows=0 loops=1)
+                       Buffers: shared hit=8013
+                       ->  Sort  (cost=3.40..3.41 rows=1 width=8) (actual time=7.856..7.857 rows=0 loops=1)
+                             Sort Key: record_words.record_id
+                             Sort Method: quicksort  Memory: 25kB
+                             Buffers: shared hit=8013
+                             ->  Limit  (cost=1.13..3.39 rows=1 width=8) (actual time=7.852..7.853 rows=0 loops=1)
+                                   Buffers: shared hit=8013
+                                   ->  Nested Loop  (cost=1.13..3.39 rows=1 width=8) (actual time=7.852..7.853 rows=0 loops=1)
+                                         Buffers: shared hit=8013
+                                         ->  Limit  (cost=0.56..1.69 rows=1 width=8) (actual time=0.046..0.838 rows=2000 loops=1)
+                                               Buffers: shared hit=13
+                                               ->  Index Only Scan using record_words_pkey on record_words  (cost=0.56..1.69 rows=1 width=8) (actual time=0.045..0.710 rows=2000 loops=1)
+                                                     Index Cond: ((word >= 'leeds'::text) AND (word < 'leedt'::text))
+                                                     Heap Fetches: 0
+                                                     Buffers: shared hit=13
+                                         ->  Limit  (cost=0.56..1.69 rows=1 width=4) (actual time=0.003..0.003 rows=0 loops=2000)
+                                               Buffers: shared hit=8000
+                                               ->  Index Only Scan using record_words_record_idx on record_words x0  (cost=0.56..1.69 rows=1 width=4) (actual time=0.003..0.003 rows=0 loops=2000)
+                                                     Index Cond: ((record_id = record_words.record_id) AND (word >= 'greenwich'::text) AND (word < 'greenwici'::text))
+                                                     Heap Fetches: 0
+                                                     Buffers: shared hit=8000
+                       ->  Index Scan using records_pkey on records  (cost=0.43..2.65 rows=1 width=37) (never executed)
+                             Index Cond: (id = record_words.record_id)
+   Planning:
+     Buffers: shared hit=8
+   Planning Time: 0.384 ms
+   Execution Time: 7.900 ms
+
+-- statement 4 (0.63 ms): SELECT (SELECT max(id) FROM records) AS records_max, (SELECT max(record_id) FROM record_wo
+   Result  (cost=1.06..1.07 rows=1 width=16) (actual time=0.026..0.027 rows=1 loops=1)
+     Buffers: shared hit=9
+     InitPlan 2 (returns $1)
+       ->  Result  (cost=0.46..0.47 rows=1 width=8) (actual time=0.014..0.014 rows=1 loops=1)
+             Buffers: shared hit=4
+             InitPlan 1 (returns $0)
+               ->  Limit  (cost=0.43..0.46 rows=1 width=8) (actual time=0.012..0.013 rows=1 loops=1)
+                     Buffers: shared hit=4
+                     ->  Index Only Scan Backward using records_pkey on records  (cost=0.43..205163.54 rows=10000000 width=8) (actual time=0.012..0.012 rows=1 loops=1)
+                           Index Cond: (id IS NOT NULL)
+                           Heap Fetches: 0
+                           Buffers: shared hit=4
+     InitPlan 4 (returns $3)
+       ->  Result  (cost=0.59..0.60 rows=1 width=8) (actual time=0.012..0.012 rows=1 loops=1)
+             Buffers: shared hit=5
+             InitPlan 3 (returns $2)
+               ->  Limit  (cost=0.56..0.59 rows=1 width=8) (actual time=0.011..0.012 rows=1 loops=1)
+                     Buffers: shared hit=5
+                     ->  Index Only Scan Backward using record_words_record_idx on record_words  (cost=0.56..969641.03 rows=44964752 width=8) (actual time=0.011..0.011 rows=1 loops=1)
+                           Index Cond: (record_id IS NOT NULL)
+                           Heap Fetches: 0
+                           Buffers: shared hit=5
+   Planning Time: 0.147 ms
+   Execution Time: 0.046 ms
+
+-- statement 5 (0.66 ms): SELECT t.token, c.word FROM unnest(string_to_array(?, ' ')) AS t(token) CROSS JOIN LATERAL ( S
+   Nested Loop Anti Join  (cost=9.12..19.71 rows=2 width=40) (actual time=0.167..0.168 rows=0 loops=1)
+     Buffers: shared hit=64
+     ->  Nested Loop  (cost=6.89..13.84 rows=2 width=40) (actual time=0.073..0.141 rows=2 loops=1)
+           Buffers: shared hit=40
+           ->  Function Scan on unnest t  (cost=0.00..0.02 rows=2 width=32) (actual time=0.005..0.006 rows=2 loops=1)
+           ->  Limit  (cost=6.89..6.89 rows=1 width=20) (actual time=0.066..0.066 rows=1 loops=2)
+                 Buffers: shared hit=40
+                 ->  Sort  (cost=6.89..6.90 rows=5 width=20) (actual time=0.065..0.065 rows=1 loops=2)
+                       Sort Key: (similarity(v.word, t.token)) DESC, v.row_count DESC
+                       Sort Method: quicksort  Memory: 25kB
+                       Buffers: shared hit=40
+                       ->  Bitmap Heap Scan on search_vocabulary v  (cost=2.79..6.86 rows=5 width=20) (actual time=0.046..0.057 rows=2 loops=2)
+                             Recheck Cond: (word % t.token)
+                             Rows Removed by Index Recheck: 6
+                             Heap Blocks: exact=6
+                             Buffers: shared hit=40
+                             ->  Bitmap Index Scan on search_vocabulary_word_trgm_idx  (cost=0.00..2.78 rows=5 width=0) (actual time=0.032..0.032 rows=7 loops=2)
+                                   Index Cond: (word % t.token)
+                                   Buffers: shared hit=34
+     ->  Bitmap Heap Scan on search_vocabulary k  (cost=2.23..4.34 rows=3 width=8) (actual time=0.010..0.010 rows=1 loops=2)
+           Recheck Cond: (word ~~ (('%'::text || t.token) || '%'::text))
+           Heap Blocks: exact=2
+           Buffers: shared hit=24
+           ->  Bitmap Index Scan on search_vocabulary_word_trgm_idx  (cost=0.00..2.23 rows=3 width=0) (actual time=0.008..0.008 rows=1 loops=2)
+                 Index Cond: (word ~~ (('%'::text || t.token) || '%'::text))
+                 Buffers: shared hit=22
+   Planning:
+     Buffers: shared hit=2
+   Planning Time: 0.180 ms
+   Execution Time: 0.216 ms
+
+-- statement 6 (30.75 ms): WITH candidates AS ( SELECT id, content FROM records 
+   Limit  (cost=585.83..585.86 rows=10 width=78) (actual time=26.557..26.558 rows=0 loops=1)
+     Buffers: shared hit=1008
+     ->  Sort  (cost=585.83..586.33 rows=200 width=78) (actual time=26.556..26.557 rows=0 loops=1)
+           Sort Key: ((lower(candidates.content) ~~ 'leeds greenwich%'::text)) DESC, (word_similarity('leeds greenwich'::text, candidates.content)) DESC, (length(candidates.content)), candidates.id
+           Sort Method: quicksort  Memory: 25kB
+           Buffers: shared hit=1008
+           ->  Subquery Scan on candidates  (cost=358.48..581.51 rows=200 width=78) (actual time=26.551..26.552 rows=0 loops=1)
+                 Buffers: shared hit=1008
+                 ->  Limit  (cost=358.48..579.51 rows=200 width=37) (actual time=26.550..26.550 rows=0 loops=1)
+                       Buffers: shared hit=1008
+                       ->  Bitmap Heap Scan on records  (cost=358.48..901.12 rows=491 width=37) (actual time=26.550..26.550 rows=0 loops=1)
+                             Recheck Cond: ((content ~~* '%leeds%'::text) AND (content ~~* '%greenwich%'::text))
+                             Buffers: shared hit=1008
+                             ->  Bitmap Index Scan on records_content_trgm_idx  (cost=0.00..358.35 rows=491 width=0) (actual time=26.547..26.547 rows=0 loops=1)
+                                   Index Cond: ((content ~~* '%leeds%'::text) AND (content ~~* '%greenwich%'::text))
+                                   Buffers: shared hit=1008
+   Planning:
+     Buffers: shared hit=1
+   Planning Time: 3.044 ms
+   Execution Time: 26.608 ms
+
+==============================================================================
+londn road  (typo corrected through the vocabulary)
+rows=10 corrected=london road took_ms=12.91 db_ms=11.61 statements=7
+
+-- statement 1 (0.51 ms): SELECT t.token, (SELECT coalesce(sum(v.row_count), 0) FROM search_vocabulary v WHERE v.wor
+   Function Scan on unnest t  (cost=0.00..11.78 rows=2 width=64) (actual time=0.026..0.047 rows=2 loops=1)
+     Buffers: shared hit=21
+     SubPlan 1
+       ->  Aggregate  (cost=5.87..5.88 rows=1 width=32) (actual time=0.019..0.019 rows=1 loops=2)
+             Buffers: shared hit=21
+             ->  Bitmap Heap Scan on search_vocabulary v  (cost=2.77..5.86 rows=3 width=8) (actual time=0.013..0.013 rows=0 loops=2)
+                   Recheck Cond: (word ~~ (t.token || '%'::text))
+                   Heap Blocks: exact=1
+                   Buffers: shared hit=21
+                   ->  Bitmap Index Scan on search_vocabulary_word_trgm_idx  (cost=0.00..2.77 rows=3 width=0) (actual time=0.010..0.010 rows=0 loops=2)
+                         Index Cond: (word ~~ (t.token || '%'::text))
+                         Buffers: shared hit=20
+   Planning:
+     Buffers: shared hit=1
+   Planning Time: 0.094 ms
+   Execution Time: 0.077 ms
+
+-- statement 2 (1.99 ms): WITH candidate_ids AS (SELECT record_id FROM ((WITH RECURSIVE firsts(w) AS ( (SELECT w1 FR
+   Limit  (cost=1116.71..1116.74 rows=10 width=78) (actual time=0.105..0.107 rows=0 loops=1)
+     Buffers: shared hit=17
+     ->  Sort  (cost=1116.71..1117.46 rows=300 width=78) (actual time=0.104..0.106 rows=0 loops=1)
+           Sort Key: ((lower(r.content) ~~ 'londn road%'::text)) DESC, (word_similarity('londn road'::text, r.content)) DESC, (length(r.content)), r.id
+           Sort Method: quicksort  Memory: 25kB
+           Buffers: shared hit=17
+           ->  Subquery Scan on r  (cost=310.01..1110.23 rows=300 width=78) (actual time=0.100..0.102 rows=0 loops=1)
+                 Buffers: shared hit=17
+                 ->  Nested Loop  (cost=310.01..1107.23 rows=300 width=37) (actual time=0.099..0.101 rows=0 loops=1)
+                       Buffers: shared hit=17
+                       ->  HashAggregate  (cost=309.58..312.58 rows=300 width=8) (actual time=0.099..0.101 rows=0 loops=1)
+                             Group Key: pp.record_id
+                             Batches: 1  Memory Usage: 37kB
+                             Buffers: shared hit=17
+                             ->  Append  (cost=64.32..308.83 rows=300 width=8) (actual time=0.097..0.099 rows=0 loops=1)
+                                   Buffers: shared hit=17
+                                   ->  Limit  (cost=64.32..72.89 rows=200 width=8) (actual time=0.027..0.028 rows=0 loops=1)
+                                         Buffers: shared hit=4
+                                         CTE firsts
+                                           ->  Recursive Union  (cost=0.56..63.76 rows=101 width=32) (actual time=0.026..0.027 rows=0 loops=1)
+                                                 Buffers: shared hit=4
+                                                 ->  Limit  (cost=0.56..1.69 rows=1 width=6) (actual time=0.024..0.024 rows=0 loops=1)
+                                                       Buffers: shared hit=4
+                                                       ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs record_word_pairs_1  (cost=0.56..1.69 rows=1 width=6) (actual time=0.023..0.023 rows=0 loops=1)
+                                                             Index Cond: ((w1 >= 'londn'::text) AND (w1 < 'londo'::text))
+                                                             Heap Fetches: 0
+                                                             Buffers: shared hit=4
+                                                 ->  WorkTable Scan on firsts f_2  (cost=0.00..6.11 rows=10 width=32) (actual time=0.002..0.002 rows=0 loops=1)
+                                                       Filter: (w IS NOT NULL)
+                                                       SubPlan 1
+                                                         ->  Limit  (cost=0.56..0.59 rows=1 width=6) (never executed)
+                                                               ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs  (cost=0.56..4484.06 rows=175005 width=6) (never executed)
+                                                                     Index Cond: ((w1 > f_2.w) AND (w1 < 'londo'::text))
+                                                                     Heap Fetches: 0
+                                         ->  Nested Loop  (cost=0.56..857.84 rows=20000 width=8) (actual time=0.027..0.027 rows=0 loops=1)
+                                               Buffers: shared hit=4
+                                               ->  CTE Scan on firsts f  (cost=0.00..2.02 rows=100 width=32) (actual time=0.027..0.027 rows=0 loops=1)
+                                                     Filter: (w IS NOT NULL)
+                                                     Buffers: shared hit=4
+                                               ->  Limit  (cost=0.56..6.56 rows=200 width=8) (never executed)
+                                                     ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs pp  (cost=0.56..13.81 rows=442 width=8) (never executed)
+                                                           Index Cond: ((w1 = f.w) AND (w2 >= 'road'::text) AND (w2 < 'roae'::text))
+                                                           Heap Fetches: 0
+                                   ->  Limit  (cost=63.23..234.43 rows=100 width=8) (actual time=0.069..0.070 rows=0 loops=1)
+                                         Buffers: shared hit=13
+                                         CTE firsts
+                                           ->  Recursive Union  (cost=0.56..62.66 rows=101 width=32) (actual time=0.028..0.051 rows=2 loops=1)
+                                                 Buffers: shared hit=9
+                                                 ->  Limit  (cost=0.56..0.59 rows=1 width=6) (actual time=0.027..0.028 rows=1 loops=1)
+                                                       Buffers: shared hit=5
+                                                       ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs record_word_pairs_3  (cost=0.56..8190.39 rows=319676 width=6) (actual time=0.027..0.027 rows=1 loops=1)
+                                                             Index Cond: ((w1 >= 'road'::text) AND (w1 < 'roae'::text))
+                                                             Heap Fetches: 0
+                                                             Buffers: shared hit=5
+                                                 ->  WorkTable Scan on firsts f_3  (cost=0.00..6.11 rows=10 width=32) (actual time=0.010..0.010 rows=0 loops=2)
+                                                       Filter: (w IS NOT NULL)
+                                                       Rows Removed by Filter: 0
+                                                       Buffers: shared hit=4
+                                                       SubPlan 3
+                                                         ->  Limit  (cost=0.56..0.59 rows=1 width=6) (actual time=0.014..0.014 rows=0 loops=1)
+                                                               Buffers: shared hit=4
+                                                               ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs record_word_pairs_2  (cost=0.56..4484.06 rows=175005 width=6) (actual time=0.014..0.014 rows=0 loops=1)
+                                                                     Index Cond: ((w1 > f_3.w) AND (w1 < 'roae'::text))
+                                                                     Heap Fetches: 0
+                                                                     Buffers: shared hit=4
+                                         ->  Nested Loop  (cost=0.56..171.77 rows=100 width=8) (actual time=0.069..0.069 rows=0 loops=1)
+                                               Buffers: shared hit=13
+                                               ->  CTE Scan on firsts f_1  (cost=0.00..2.02 rows=100 width=32) (actual time=0.029..0.052 rows=1 loops=1)
+                                                     Filter: (w IS NOT NULL)
+                                                     Rows Removed by Filter: 1
+                                                     Buffers: shared hit=9
+                                               ->  Limit  (cost=0.56..1.69 rows=1 width=8) (actual time=0.017..0.017 rows=0 loops=1)
+                                                     Buffers: shared hit=4
+                                                     ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs pp_1  (cost=0.56..1.69 rows=1 width=8) (actual time=0.016..0.016 rows=0 loops=1)
+                                                           Index Cond: ((w1 = f_1.w) AND (w2 >= 'londn'::text) AND (w2 < 'londo'::text))
+                                                           Heap Fetches: 0
+                                                           Buffers: shared hit=4
+                       ->  Index Scan using records_pkey on records  (cost=0.43..2.65 rows=1 width=37) (never executed)
+                             Index Cond: (id = pp.record_id)
+   Planning Time: 0.681 ms
+   Execution Time: 0.236 ms
+
+-- statement 3 (1.85 ms): WITH candidate_ids AS (SELECT record_id FROM ( SELECT w.record_id 
+   Limit  (cost=6.08..6.09 rows=1 width=78) (actual time=0.022..0.023 rows=0 loops=1)
+     Buffers: shared hit=4
+     ->  Sort  (cost=6.08..6.09 rows=1 width=78) (actual time=0.022..0.023 rows=0 loops=1)
+           Sort Key: ((lower(r.content) ~~ 'londn road%'::text)) DESC, (word_similarity('londn road'::text, r.content)) DESC, (length(r.content)), r.id
+           Sort Method: quicksort  Memory: 25kB
+           Buffers: shared hit=4
+           ->  Subquery Scan on r  (cost=3.84..6.07 rows=1 width=78) (actual time=0.017..0.018 rows=0 loops=1)
+                 Buffers: shared hit=4
+                 ->  Nested Loop  (cost=3.84..6.06 rows=1 width=37) (actual time=0.017..0.018 rows=0 loops=1)
+                       Buffers: shared hit=4
+                       ->  Sort  (cost=3.40..3.41 rows=1 width=8) (actual time=0.017..0.017 rows=0 loops=1)
+                             Sort Key: record_words.record_id
+                             Sort Method: quicksort  Memory: 25kB
+                             Buffers: shared hit=4
+                             ->  Limit  (cost=1.13..3.39 rows=1 width=8) (actual time=0.014..0.015 rows=0 loops=1)
+                                   Buffers: shared hit=4
+                                   ->  Nested Loop  (cost=1.13..3.39 rows=1 width=8) (actual time=0.014..0.014 rows=0 loops=1)
+                                         Buffers: shared hit=4
+                                         ->  Limit  (cost=0.56..1.69 rows=1 width=8) (actual time=0.014..0.014 rows=0 loops=1)
+                                               Buffers: shared hit=4
+                                               ->  Index Only Scan using record_words_pkey on record_words  (cost=0.56..1.69 rows=1 width=8) (actual time=0.013..0.013 rows=0 loops=1)
+                                                     Index Cond: ((word >= 'londn'::text) AND (word < 'londo'::text))
+                                                     Heap Fetches: 0
+                                                     Buffers: shared hit=4
+                                         ->  Limit  (cost=0.56..1.69 rows=1 width=4) (never executed)
+                                               ->  Index Only Scan using record_words_record_idx on record_words x0  (cost=0.56..1.69 rows=1 width=4) (never executed)
+                                                     Index Cond: ((record_id = record_words.record_id) AND (word >= 'road'::text) AND (word < 'roae'::text))
+                                                     Heap Fetches: 0
+                       ->  Index Scan using records_pkey on records  (cost=0.43..2.65 rows=1 width=37) (never executed)
+                             Index Cond: (id = record_words.record_id)
+   Planning:
+     Buffers: shared hit=8
+   Planning Time: 0.342 ms
+   Execution Time: 0.046 ms
+
+-- statement 4 (0.51 ms): SELECT (SELECT max(id) FROM records) AS records_max, (SELECT max(record_id) FROM record_wo
+   Result  (cost=1.06..1.07 rows=1 width=16) (actual time=0.022..0.023 rows=1 loops=1)
+     Buffers: shared hit=9
+     InitPlan 2 (returns $1)
+       ->  Result  (cost=0.46..0.47 rows=1 width=8) (actual time=0.012..0.012 rows=1 loops=1)
+             Buffers: shared hit=4
+             InitPlan 1 (returns $0)
+               ->  Limit  (cost=0.43..0.46 rows=1 width=8) (actual time=0.008..0.008 rows=1 loops=1)
+                     Buffers: shared hit=4
+                     ->  Index Only Scan Backward using records_pkey on records  (cost=0.43..205163.54 rows=10000000 width=8) (actual time=0.007..0.007 rows=1 loops=1)
+                           Index Cond: (id IS NOT NULL)
+                           Heap Fetches: 0
+                           Buffers: shared hit=4
+     InitPlan 4 (returns $3)
+       ->  Result  (cost=0.59..0.60 rows=1 width=8) (actual time=0.009..0.009 rows=1 loops=1)
+             Buffers: shared hit=5
+             InitPlan 3 (returns $2)
+               ->  Limit  (cost=0.56..0.59 rows=1 width=8) (actual time=0.009..0.009 rows=1 loops=1)
+                     Buffers: shared hit=5
+                     ->  Index Only Scan Backward using record_words_record_idx on record_words  (cost=0.56..969641.03 rows=44964752 width=8) (actual time=0.009..0.009 rows=1 loops=1)
+                           Index Cond: (record_id IS NOT NULL)
+                           Heap Fetches: 0
+                           Buffers: shared hit=5
+   Planning Time: 0.101 ms
+   Execution Time: 0.037 ms
+
+-- statement 5 (0.61 ms): SELECT t.token, c.word FROM unnest(string_to_array(?, ' ')) AS t(token) CROSS JOIN LATERAL ( S
+   Nested Loop Anti Join  (cost=9.12..19.71 rows=2 width=40) (actual time=0.048..0.089 rows=1 loops=1)
+     Buffers: shared hit=43
+     ->  Nested Loop  (cost=6.89..13.84 rows=2 width=40) (actual time=0.042..0.076 rows=2 loops=1)
+           Buffers: shared hit=30
+           ->  Function Scan on unnest t  (cost=0.00..0.02 rows=2 width=32) (actual time=0.003..0.003 rows=2 loops=1)
+           ->  Limit  (cost=6.89..6.89 rows=1 width=20) (actual time=0.035..0.035 rows=1 loops=2)
+                 Buffers: shared hit=30
+                 ->  Sort  (cost=6.89..6.90 rows=5 width=20) (actual time=0.034..0.035 rows=1 loops=2)
+                       Sort Key: (similarity(v.word, t.token)) DESC, v.row_count DESC
+                       Sort Method: quicksort  Memory: 25kB
+                       Buffers: shared hit=30
+                       ->  Bitmap Heap Scan on search_vocabulary v  (cost=2.79..6.86 rows=5 width=20) (actual time=0.021..0.030 rows=2 loops=2)
+                             Recheck Cond: (word % t.token)
+                             Rows Removed by Index Recheck: 6
+                             Heap Blocks: exact=6
+                             Buffers: shared hit=30
+                             ->  Bitmap Index Scan on search_vocabulary_word_trgm_idx  (cost=0.00..2.78 rows=5 width=0) (actual time=0.014..0.014 rows=8 loops=2)
+                                   Index Cond: (word % t.token)
+                                   Buffers: shared hit=24
+     ->  Bitmap Heap Scan on search_vocabulary k  (cost=2.23..4.34 rows=3 width=8) (actual time=0.004..0.004 rows=0 loops=2)
+           Recheck Cond: (word ~~ (('%'::text || t.token) || '%'::text))
+           Heap Blocks: exact=1
+           Buffers: shared hit=13
+           ->  Bitmap Index Scan on search_vocabulary_word_trgm_idx  (cost=0.00..2.23 rows=3 width=0) (actual time=0.003..0.003 rows=0 loops=2)
+                 Index Cond: (word ~~ (('%'::text || t.token) || '%'::text))
+                 Buffers: shared hit=12
+   Planning:
+     Buffers: shared hit=2
+   Planning Time: 0.145 ms
+   Execution Time: 0.125 ms
+
+-- statement 6 (0.43 ms): SELECT t.token, (SELECT coalesce(sum(v.row_count), 0) FROM search_vocabulary v WHERE v.wor
+   Function Scan on unnest t  (cost=0.00..11.78 rows=2 width=64) (actual time=0.057..0.093 rows=2 loops=1)
+     Buffers: shared hit=24
+     SubPlan 1
+       ->  Aggregate  (cost=5.87..5.88 rows=1 width=32) (actual time=0.041..0.042 rows=1 loops=2)
+             Buffers: shared hit=24
+             ->  Bitmap Heap Scan on search_vocabulary v  (cost=2.77..5.86 rows=3 width=8) (actual time=0.028..0.029 rows=1 loops=2)
+                   Recheck Cond: (word ~~ (t.token || '%'::text))
+                   Heap Blocks: exact=2
+                   Buffers: shared hit=24
+                   ->  Bitmap Index Scan on search_vocabulary_word_trgm_idx  (cost=0.00..2.77 rows=3 width=0) (actual time=0.018..0.018 rows=1 loops=2)
+                         Index Cond: (word ~~ (t.token || '%'::text))
+                         Buffers: shared hit=22
+   Planning:
+     Buffers: shared hit=1
+   Planning Time: 0.081 ms
+   Execution Time: 0.125 ms
+
+-- statement 7 (6.24 ms): WITH candidate_ids AS (SELECT record_id FROM ((WITH RECURSIVE firsts(w) AS ( (SELECT w1 FR
+   Limit  (cost=1222.54..1222.56 rows=10 width=78) (actual time=4.162..4.169 rows=10 loops=1)
+     Buffers: shared hit=1619
+     ->  Sort  (cost=1222.54..1223.54 rows=400 width=78) (actual time=4.161..4.167 rows=10 loops=1)
+           Sort Key: ((lower(r.content) ~~ 'london road%'::text)) DESC, (word_similarity('london road'::text, r.content)) DESC, (length(r.content)), r.id
+           Sort Method: top-N heapsort  Memory: 27kB
+           Buffers: shared hit=1619
+           ->  Subquery Scan on r  (cost=147.53..1213.89 rows=400 width=78) (actual time=0.429..4.020 rows=399 loops=1)
+                 Buffers: shared hit=1619
+                 ->  Nested Loop  (cost=147.53..1209.89 rows=400 width=37) (actual time=0.415..1.466 rows=399 loops=1)
+                       Buffers: shared hit=1619
+                       ->  HashAggregate  (cost=147.09..151.09 rows=400 width=8) (actual time=0.407..0.451 rows=399 loops=1)
+                             Group Key: pp.record_id
+                             Batches: 1  Memory Usage: 45kB
+                             Buffers: shared hit=23
+                             ->  Append  (cost=63.23..146.09 rows=400 width=8) (actual time=0.081..0.360 rows=400 loops=1)
+                                   Buffers: shared hit=23
+                                   ->  Limit  (cost=63.23..71.80 rows=200 width=8) (actual time=0.081..0.187 rows=200 loops=1)
+                                         Buffers: shared hit=11
+                                         CTE firsts
+                                           ->  Recursive Union  (cost=0.56..62.66 rows=101 width=32) (actual time=0.049..0.050 rows=1 loops=1)
+                                                 Buffers: shared hit=5
+                                                 ->  Limit  (cost=0.56..0.59 rows=1 width=6) (actual time=0.049..0.049 rows=1 loops=1)
+                                                       Buffers: shared hit=5
+                                                       ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs  (cost=0.56..2481.79 rows=96836 width=6) (actual time=0.048..0.049 rows=1 loops=1)
+                                                             Index Cond: ((w1 >= 'london'::text) AND (w1 < 'londoo'::text))
+                                                             Heap Fetches: 0
+                                                             Buffers: shared hit=5
+                                                 ->  WorkTable Scan on firsts f_2  (cost=0.00..6.11 rows=10 width=32) (never executed)
+                                                       Filter: (w IS NOT NULL)
+                                         ->  Nested Loop  (cost=0.56..857.84 rows=20000 width=8) (actual time=0.081..0.178 rows=200 loops=1)
+                                               Buffers: shared hit=11
+                                               ->  CTE Scan on firsts f  (cost=0.00..2.02 rows=100 width=32) (actual time=0.051..0.051 rows=1 loops=1)
+                                                     Filter: (w IS NOT NULL)
+                                                     Buffers: shared hit=5
+                                               ->  Limit  (cost=0.56..6.56 rows=200 width=8) (actual time=0.029..0.113 rows=200 loops=1)
+                                                     Buffers: shared hit=6
+                                                     ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs pp  (cost=0.56..13.81 rows=442 width=8) (actual time=0.028..0.099 rows=200 loops=1)
+                                                           Index Cond: ((w1 = f.w) AND (w2 >= 'road'::text) AND (w2 < 'roae'::text))
+                                                           Heap Fetches: 0
+                                                           Buffers: shared hit=6
+                                   ->  Limit  (cost=63.23..72.29 rows=200 width=8) (actual time=0.043..0.148 rows=200 loops=1)
+                                         Buffers: shared hit=12
+                                         CTE firsts
+                                           ->  Recursive Union  (cost=0.56..62.66 rows=101 width=32) (actual time=0.024..0.025 rows=1 loops=1)
+                                                 Buffers: shared hit=5
+                                                 ->  Limit  (cost=0.56..0.59 rows=1 width=6) (actual time=0.024..0.024 rows=1 loops=1)
+                                                       Buffers: shared hit=5
+                                                       ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs record_word_pairs_1  (cost=0.56..8190.39 rows=319676 width=6) (actual time=0.024..0.024 rows=1 loops=1)
+                                                             Index Cond: ((w1 >= 'road'::text) AND (w1 < 'roae'::text))
+                                                             Heap Fetches: 0
+                                                             Buffers: shared hit=5
+                                                 ->  WorkTable Scan on firsts f_3  (cost=0.00..6.11 rows=10 width=32) (never executed)
+                                                       Filter: (w IS NOT NULL)
+                                         ->  Nested Loop  (cost=0.56..594.27 rows=13100 width=8) (actual time=0.043..0.136 rows=200 loops=1)
+                                               Buffers: shared hit=12
+                                               ->  CTE Scan on firsts f_1  (cost=0.00..2.02 rows=100 width=32) (actual time=0.025..0.025 rows=1 loops=1)
+                                                     Filter: (w IS NOT NULL)
+                                                     Buffers: shared hit=5
+                                               ->  Limit  (cost=0.56..4.61 rows=131 width=8) (actual time=0.018..0.097 rows=200 loops=1)
+                                                     Buffers: shared hit=7
+                                                     ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs pp_1  (cost=0.56..4.61 rows=131 width=8) (actual time=0.018..0.087 rows=200 loops=1)
+                                                           Index Cond: ((w1 = f_1.w) AND (w2 >= 'london'::text) AND (w2 < 'londoo'::text))
+                                                           Heap Fetches: 0
+                                                           Buffers: shared hit=7
+                       ->  Index Scan using records_pkey on records  (cost=0.43..2.65 rows=1 width=37) (actual time=0.002..0.002 rows=1 loops=399)
+                             Index Cond: (id = pp.record_id)
+                             Buffers: shared hit=1596
+   Planning Time: 0.880 ms
+   Execution Time: 4.306 ms
+
+==============================================================================
+enwic oad  (fragments from the middle of words (trigram fallback))
+rows=10 corrected=none took_ms=24.18 db_ms=22.54 statements=6
+
+-- statement 1 (0.77 ms): SELECT t.token, (SELECT coalesce(sum(v.row_count), 0) FROM search_vocabulary v WHERE v.wor
+   Function Scan on unnest t  (cost=0.00..11.78 rows=2 width=64) (actual time=0.034..0.042 rows=2 loops=1)
+     Buffers: shared hit=18
+     SubPlan 1
+       ->  Aggregate  (cost=5.87..5.88 rows=1 width=32) (actual time=0.016..0.016 rows=1 loops=2)
+             Buffers: shared hit=18
+             ->  Bitmap Heap Scan on search_vocabulary v  (cost=2.77..5.86 rows=3 width=8) (actual time=0.013..0.013 rows=0 loops=2)
+                   Recheck Cond: (word ~~ (t.token || '%'::text))
+                   Buffers: shared hit=18
+                   ->  Bitmap Index Scan on search_vocabulary_word_trgm_idx  (cost=0.00..2.77 rows=3 width=0) (actual time=0.012..0.012 rows=0 loops=2)
+                         Index Cond: (word ~~ (t.token || '%'::text))
+                         Buffers: shared hit=18
+   Planning:
+     Buffers: shared hit=1
+   Planning Time: 0.105 ms
+   Execution Time: 0.071 ms
+
+-- statement 2 (1.83 ms): WITH candidate_ids AS (SELECT record_id FROM ((WITH RECURSIVE firsts(w) AS ( (SELECT w1 FR
+   Limit  (cost=1011.38..1011.40 rows=10 width=78) (actual time=0.050..0.052 rows=0 loops=1)
+     Buffers: shared hit=8
+     ->  Sort  (cost=1011.38..1011.88 rows=200 width=78) (actual time=0.049..0.052 rows=0 loops=1)
+           Sort Key: ((lower(r.content) ~~ 'enwic oad%'::text)) DESC, (word_similarity('enwic oad'::text, r.content)) DESC, (length(r.content)), r.id
+           Sort Method: quicksort  Memory: 25kB
+           Buffers: shared hit=8
+           ->  Subquery Scan on r  (cost=472.99..1007.05 rows=200 width=78) (actual time=0.044..0.046 rows=0 loops=1)
+                 Buffers: shared hit=8
+                 ->  Nested Loop  (cost=472.99..1005.05 rows=200 width=37) (actual time=0.043..0.045 rows=0 loops=1)
+                       Buffers: shared hit=8
+                       ->  HashAggregate  (cost=472.55..474.55 rows=200 width=8) (actual time=0.043..0.045 rows=0 loops=1)
+                             Group Key: pp.record_id
+                             Batches: 1  Memory Usage: 40kB
+                             Buffers: shared hit=8
+                             ->  Append  (cost=64.32..472.05 rows=200 width=8) (actual time=0.042..0.044 rows=0 loops=1)
+                                   Buffers: shared hit=8
+                                   ->  Limit  (cost=64.32..235.53 rows=100 width=8) (actual time=0.025..0.026 rows=0 loops=1)
+                                         Buffers: shared hit=4
+                                         CTE firsts
+                                           ->  Recursive Union  (cost=0.56..63.76 rows=101 width=32) (actual time=0.024..0.025 rows=0 loops=1)
+                                                 Buffers: shared hit=4
+                                                 ->  Limit  (cost=0.56..1.69 rows=1 width=6) (actual time=0.021..0.022 rows=0 loops=1)
+                                                       Buffers: shared hit=4
+                                                       ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs record_word_pairs_1  (cost=0.56..1.69 rows=1 width=6) (actual time=0.021..0.021 rows=0 loops=1)
+                                                             Index Cond: ((w1 >= 'enwic'::text) AND (w1 < 'enwid'::text))
+                                                             Heap Fetches: 0
+                                                             Buffers: shared hit=4
+                                                 ->  WorkTable Scan on firsts f_2  (cost=0.00..6.11 rows=10 width=32) (actual time=0.002..0.003 rows=0 loops=1)
+                                                       Filter: (w IS NOT NULL)
+                                                       SubPlan 1
+                                                         ->  Limit  (cost=0.56..0.59 rows=1 width=6) (never executed)
+                                                               ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs  (cost=0.56..4484.06 rows=175005 width=6) (never executed)
+                                                                     Index Cond: ((w1 > f_2.w) AND (w1 < 'enwid'::text))
+                                                                     Heap Fetches: 0
+                                         ->  Nested Loop  (cost=0.56..171.77 rows=100 width=8) (actual time=0.025..0.025 rows=0 loops=1)
+                                               Buffers: shared hit=4
+                                               ->  CTE Scan on firsts f  (cost=0.00..2.02 rows=100 width=32) (actual time=0.025..0.025 rows=0 loops=1)
+                                                     Filter: (w IS NOT NULL)
+                                                     Buffers: shared hit=4
+                                               ->  Limit  (cost=0.56..1.69 rows=1 width=8) (never executed)
+                                                     ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs pp  (cost=0.56..1.69 rows=1 width=8) (never executed)
+                                                           Index Cond: ((w1 = f.w) AND (w2 >= 'oad'::text) AND (w2 < 'oae'::text))
+                                                           Heap Fetches: 0
+                                   ->  Limit  (cost=64.32..235.53 rows=100 width=8) (actual time=0.016..0.017 rows=0 loops=1)
+                                         Buffers: shared hit=4
+                                         CTE firsts
+                                           ->  Recursive Union  (cost=0.56..63.76 rows=101 width=32) (actual time=0.016..0.016 rows=0 loops=1)
+                                                 Buffers: shared hit=4
+                                                 ->  Limit  (cost=0.56..1.69 rows=1 width=6) (actual time=0.014..0.014 rows=0 loops=1)
+                                                       Buffers: shared hit=4
+                                                       ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs record_word_pairs_3  (cost=0.56..1.69 rows=1 width=6) (actual time=0.014..0.014 rows=0 loops=1)
+                                                             Index Cond: ((w1 >= 'oad'::text) AND (w1 < 'oae'::text))
+                                                             Heap Fetches: 0
+                                                             Buffers: shared hit=4
+                                                 ->  WorkTable Scan on firsts f_3  (cost=0.00..6.11 rows=10 width=32) (actual time=0.002..0.002 rows=0 loops=1)
+                                                       Filter: (w IS NOT NULL)
+                                                       SubPlan 3
+                                                         ->  Limit  (cost=0.56..0.59 rows=1 width=6) (never executed)
+                                                               ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs record_word_pairs_2  (cost=0.56..4484.06 rows=175005 width=6) (never executed)
+                                                                     Index Cond: ((w1 > f_3.w) AND (w1 < 'oae'::text))
+                                                                     Heap Fetches: 0
+                                         ->  Nested Loop  (cost=0.56..171.77 rows=100 width=8) (actual time=0.016..0.016 rows=0 loops=1)
+                                               Buffers: shared hit=4
+                                               ->  CTE Scan on firsts f_1  (cost=0.00..2.02 rows=100 width=32) (actual time=0.016..0.016 rows=0 loops=1)
+                                                     Filter: (w IS NOT NULL)
+                                                     Buffers: shared hit=4
+                                               ->  Limit  (cost=0.56..1.69 rows=1 width=8) (never executed)
+                                                     ->  Index Only Scan using record_word_pairs_pkey on record_word_pairs pp_1  (cost=0.56..1.69 rows=1 width=8) (never executed)
+                                                           Index Cond: ((w1 = f_1.w) AND (w2 >= 'enwic'::text) AND (w2 < 'enwid'::text))
+                                                           Heap Fetches: 0
+                       ->  Index Scan using records_pkey on records  (cost=0.43..2.65 rows=1 width=37) (never executed)
+                             Index Cond: (id = pp.record_id)
+   Planning Time: 0.665 ms
+   Execution Time: 0.182 ms
+
+-- statement 3 (1.32 ms): WITH candidate_ids AS (SELECT record_id FROM ( SELECT w.record_id 
+   Limit  (cost=6.08..6.09 rows=1 width=78) (actual time=0.026..0.027 rows=0 loops=1)
+     Buffers: shared hit=4
+     ->  Sort  (cost=6.08..6.09 rows=1 width=78) (actual time=0.025..0.026 rows=0 loops=1)
+           Sort Key: ((lower(r.content) ~~ 'enwic oad%'::text)) DESC, (word_similarity('enwic oad'::text, r.content)) DESC, (length(r.content)), r.id
+           Sort Method: quicksort  Memory: 25kB
+           Buffers: shared hit=4
+           ->  Subquery Scan on r  (cost=3.84..6.07 rows=1 width=78) (actual time=0.023..0.024 rows=0 loops=1)
+                 Buffers: shared hit=4
+                 ->  Nested Loop  (cost=3.84..6.06 rows=1 width=37) (actual time=0.023..0.024 rows=0 loops=1)
+                       Buffers: shared hit=4
+                       ->  Sort  (cost=3.40..3.41 rows=1 width=8) (actual time=0.023..0.023 rows=0 loops=1)
+                             Sort Key: record_words.record_id
+                             Sort Method: quicksort  Memory: 25kB
+                             Buffers: shared hit=4
+                             ->  Limit  (cost=1.13..3.39 rows=1 width=8) (actual time=0.021..0.022 rows=0 loops=1)
+                                   Buffers: shared hit=4
+                                   ->  Nested Loop  (cost=1.13..3.39 rows=1 width=8) (actual time=0.021..0.021 rows=0 loops=1)
+                                         Buffers: shared hit=4
+                                         ->  Limit  (cost=0.56..1.69 rows=1 width=8) (actual time=0.021..0.021 rows=0 loops=1)
+                                               Buffers: shared hit=4
+                                               ->  Index Only Scan using record_words_pkey on record_words  (cost=0.56..1.69 rows=1 width=8) (actual time=0.020..0.021 rows=0 loops=1)
+                                                     Index Cond: ((word >= 'enwic'::text) AND (word < 'enwid'::text))
+                                                     Heap Fetches: 0
+                                                     Buffers: shared hit=4
+                                         ->  Limit  (cost=0.56..1.69 rows=1 width=4) (never executed)
+                                               ->  Index Only Scan using record_words_record_idx on record_words x0  (cost=0.56..1.69 rows=1 width=4) (never executed)
+                                                     Index Cond: ((record_id = record_words.record_id) AND (word >= 'oad'::text) AND (word < 'oae'::text))
+                                                     Heap Fetches: 0
+                       ->  Index Scan using records_pkey on records  (cost=0.43..2.65 rows=1 width=37) (never executed)
+                             Index Cond: (id = record_words.record_id)
+   Planning:
+     Buffers: shared hit=8
+   Planning Time: 0.352 ms
+   Execution Time: 0.053 ms
+
+-- statement 4 (0.71 ms): SELECT (SELECT max(id) FROM records) AS records_max, (SELECT max(record_id) FROM record_wo
+   Result  (cost=1.06..1.07 rows=1 width=16) (actual time=0.024..0.025 rows=1 loops=1)
+     Buffers: shared hit=9
+     InitPlan 2 (returns $1)
+       ->  Result  (cost=0.46..0.47 rows=1 width=8) (actual time=0.013..0.013 rows=1 loops=1)
+             Buffers: shared hit=4
+             InitPlan 1 (returns $0)
+               ->  Limit  (cost=0.43..0.46 rows=1 width=8) (actual time=0.010..0.011 rows=1 loops=1)
+                     Buffers: shared hit=4
+                     ->  Index Only Scan Backward using records_pkey on records  (cost=0.43..205163.54 rows=10000000 width=8) (actual time=0.010..0.010 rows=1 loops=1)
+                           Index Cond: (id IS NOT NULL)
+                           Heap Fetches: 0
+                           Buffers: shared hit=4
+     InitPlan 4 (returns $3)
+       ->  Result  (cost=0.59..0.60 rows=1 width=8) (actual time=0.010..0.010 rows=1 loops=1)
+             Buffers: shared hit=5
+             InitPlan 3 (returns $2)
+               ->  Limit  (cost=0.56..0.59 rows=1 width=8) (actual time=0.009..0.010 rows=1 loops=1)
+                     Buffers: shared hit=5
+                     ->  Index Only Scan Backward using record_words_record_idx on record_words  (cost=0.56..969641.03 rows=44964752 width=8) (actual time=0.009..0.009 rows=1 loops=1)
+                           Index Cond: (record_id IS NOT NULL)
+                           Heap Fetches: 0
+                           Buffers: shared hit=5
+   Planning Time: 0.108 ms
+   Execution Time: 0.040 ms
+
+-- statement 5 (0.66 ms): SELECT t.token, c.word FROM unnest(string_to_array(?, ' ')) AS t(token) CROSS JOIN LATERAL ( S
+   Nested Loop Anti Join  (cost=9.12..19.71 rows=2 width=40) (actual time=0.103..0.105 rows=0 loops=1)
+     Buffers: shared hit=31
+     ->  Nested Loop  (cost=6.89..13.84 rows=2 width=40) (actual time=0.067..0.070 rows=1 loops=1)
+           Buffers: shared hit=27
+           ->  Function Scan on unnest t  (cost=0.00..0.02 rows=2 width=32) (actual time=0.004..0.005 rows=2 loops=1)
+           ->  Limit  (cost=6.89..6.89 rows=1 width=20) (actual time=0.031..0.031 rows=0 loops=2)
+                 Buffers: shared hit=27
+                 ->  Sort  (cost=6.89..6.90 rows=5 width=20) (actual time=0.030..0.030 rows=0 loops=2)
+                       Sort Key: (similarity(v.word, t.token)) DESC, v.row_count DESC
+                       Sort Method: quicksort  Memory: 25kB
+                       Buffers: shared hit=27
+                       ->  Bitmap Heap Scan on search_vocabulary v  (cost=2.79..6.86 rows=5 width=20) (actual time=0.025..0.026 rows=0 loops=2)
+                             Recheck Cond: (word % t.token)
+                             Rows Removed by Index Recheck: 3
+                             Heap Blocks: exact=5
+                             Buffers: shared hit=27
+                             ->  Bitmap Index Scan on search_vocabulary_word_trgm_idx  (cost=0.00..2.78 rows=5 width=0) (actual time=0.015..0.015 rows=4 loops=2)
+                                   Index Cond: (word % t.token)
+                                   Buffers: shared hit=22
+     ->  Bitmap Heap Scan on search_vocabulary k  (cost=2.23..4.34 rows=3 width=8) (actual time=0.030..0.031 rows=1 loops=1)
+           Recheck Cond: (word ~~ (('%'::text || t.token) || '%'::text))
+           Heap Blocks: exact=1
+           Buffers: shared hit=4
+           ->  Bitmap Index Scan on search_vocabulary_word_trgm_idx  (cost=0.00..2.23 rows=3 width=0) (actual time=0.002..0.002 rows=1 loops=1)
+                 Index Cond: (word ~~ (('%'::text || t.token) || '%'::text))
+                 Buffers: shared hit=3
+   Planning:
+     Buffers: shared hit=2
+   Planning Time: 0.131 ms
+   Execution Time: 0.158 ms
+
+-- statement 6 (18.17 ms): WITH candidates AS ( SELECT id, content FROM records 
+   Limit  (cost=379.08..379.11 rows=10 width=78) (actual time=15.781..15.783 rows=10 loops=1)
+     Buffers: shared hit=495
+     ->  Sort  (cost=379.08..379.58 rows=200 width=78) (actual time=15.780..15.782 rows=10 loops=1)
+           Sort Key: ((lower(candidates.content) ~~ 'enwic oad%'::text)) DESC, (word_similarity('enwic oad'::text, candidates.content)) DESC, (length(candidates.content)), candidates.id
+           Sort Method: top-N heapsort  Memory: 26kB
+           Buffers: shared hit=495
+           ->  Subquery Scan on candidates  (cost=156.23..374.76 rows=200 width=78) (actual time=13.914..15.704 rows=200 loops=1)
+                 Buffers: shared hit=495
+                 ->  Limit  (cost=156.23..372.76 rows=200 width=37) (actual time=13.899..14.487 rows=200 loops=1)
+                       Buffers: shared hit=495
+                       ->  Bitmap Heap Scan on records  (cost=156.23..2814.18 rows=2455 width=37) (actual time=13.899..14.475 rows=200 loops=1)
+                             Recheck Cond: ((content ~~* '%enwic%'::text) AND (content ~~* '%oad%'::text))
+                             Rows Removed by Index Recheck: 2
+                             Heap Blocks: exact=202
+                             Buffers: shared hit=495
+                             ->  Bitmap Index Scan on records_content_trgm_idx  (cost=0.00..155.61 rows=2455 width=0) (actual time=13.751..13.751 rows=1179 loops=1)
+                                   Index Cond: ((content ~~* '%enwic%'::text) AND (content ~~* '%oad%'::text))
+                                   Buffers: shared hit=293
+   Planning:
+     Buffers: shared hit=1
+   Planning Time: 2.268 ms
+   Execution Time: 15.893 ms
+
+==============================================================================
+qzxv999  (no match)
+rows=0 corrected=none took_ms=4.06 db_ms=2.45 statements=4
+
+-- statement 1 (0.62 ms): WITH candidate_ids AS (SELECT record_id FROM record_words WHERE word >= ? AND word < ? LIMIT ?) 
+   Limit  (cost=4.36..4.36 rows=1 width=78) (actual time=0.017..0.017 rows=0 loops=1)
+     Buffers: shared hit=4
+     ->  Sort  (cost=4.36..4.36 rows=1 width=78) (actual time=0.016..0.017 rows=0 loops=1)
+           Sort Key: ((lower(r.content) ~~ 'qzxv999%'::text)) DESC, (word_similarity('qzxv999'::text, r.content)) DESC, (length(r.content)), r.id
+           Sort Method: quicksort  Memory: 25kB
+           Buffers: shared hit=4
+           ->  Subquery Scan on r  (cost=1.00..4.35 rows=1 width=78) (actual time=0.014..0.015 rows=0 loops=1)
+                 Buffers: shared hit=4
+                 ->  Nested Loop  (cost=1.00..4.34 rows=1 width=37) (actual time=0.014..0.014 rows=0 loops=1)
+                       Buffers: shared hit=4
+                       ->  Limit  (cost=0.56..1.69 rows=1 width=8) (actual time=0.013..0.014 rows=0 loops=1)
+                             Buffers: shared hit=4
+                             ->  Index Only Scan using record_words_pkey on record_words  (cost=0.56..1.69 rows=1 width=8) (actual time=0.013..0.013 rows=0 loops=1)
+                                   Index Cond: ((word >= 'qzxv999'::text) AND (word < 'qzxv99:'::text))
+                                   Heap Fetches: 0
+                                   Buffers: shared hit=4
+                       ->  Index Scan using records_pkey on records  (cost=0.43..2.65 rows=1 width=37) (never executed)
+                             Index Cond: (id = record_words.record_id)
+   Planning:
+     Buffers: shared hit=8
+   Planning Time: 0.249 ms
+   Execution Time: 0.036 ms
+
+-- statement 2 (0.61 ms): SELECT (SELECT max(id) FROM records) AS records_max, (SELECT max(record_id) FROM record_wo
+   Result  (cost=1.06..1.07 rows=1 width=16) (actual time=0.033..0.033 rows=1 loops=1)
+     Buffers: shared hit=9
+     InitPlan 2 (returns $1)
+       ->  Result  (cost=0.46..0.47 rows=1 width=8) (actual time=0.009..0.010 rows=1 loops=1)
+             Buffers: shared hit=4
+             InitPlan 1 (returns $0)
+               ->  Limit  (cost=0.43..0.46 rows=1 width=8) (actual time=0.008..0.009 rows=1 loops=1)
+                     Buffers: shared hit=4
+                     ->  Index Only Scan Backward using records_pkey on records  (cost=0.43..205163.54 rows=10000000 width=8) (actual time=0.008..0.008 rows=1 loops=1)
+                           Index Cond: (id IS NOT NULL)
+                           Heap Fetches: 0
+                           Buffers: shared hit=4
+     InitPlan 4 (returns $3)
+       ->  Result  (cost=0.59..0.60 rows=1 width=8) (actual time=0.023..0.023 rows=1 loops=1)
+             Buffers: shared hit=5
+             InitPlan 3 (returns $2)
+               ->  Limit  (cost=0.56..0.59 rows=1 width=8) (actual time=0.022..0.022 rows=1 loops=1)
+                     Buffers: shared hit=5
+                     ->  Index Only Scan Backward using record_words_record_idx on record_words  (cost=0.56..969641.03 rows=44964752 width=8) (actual time=0.022..0.022 rows=1 loops=1)
+                           Index Cond: (record_id IS NOT NULL)
+                           Heap Fetches: 0
+                           Buffers: shared hit=5
+   Planning Time: 0.142 ms
+   Execution Time: 0.049 ms
+
+-- statement 3 (0.74 ms): SELECT t.token, c.word FROM unnest(string_to_array(?, ' ')) AS t(token) CROSS JOIN LATERAL ( S
+   Nested Loop Anti Join  (cost=9.67..10.74 rows=1 width=40) (actual time=0.025..0.026 rows=0 loops=1)
+     Buffers: shared hit=17
+     ->  Nested Loop  (cost=6.89..6.92 rows=1 width=40) (actual time=0.025..0.026 rows=0 loops=1)
+           Buffers: shared hit=17
+           ->  Function Scan on unnest t  (cost=0.00..0.01 rows=1 width=32) (actual time=0.003..0.003 rows=1 loops=1)
+           ->  Limit  (cost=6.89..6.89 rows=1 width=20) (actual time=0.021..0.021 rows=0 loops=1)
+                 Buffers: shared hit=17
+                 ->  Sort  (cost=6.89..6.90 rows=5 width=20) (actual time=0.021..0.021 rows=0 loops=1)
+                       Sort Key: (similarity(v.word, t.token)) DESC, v.row_count DESC
+                       Sort Method: quicksort  Memory: 25kB
+                       Buffers: shared hit=17
+                       ->  Bitmap Heap Scan on search_vocabulary v  (cost=2.79..6.86 rows=5 width=20) (actual time=0.017..0.017 rows=0 loops=1)
+                             Recheck Cond: (word % t.token)
+                             Buffers: shared hit=17
+                             ->  Bitmap Index Scan on search_vocabulary_word_trgm_idx  (cost=0.00..2.78 rows=5 width=0) (actual time=0.015..0.015 rows=0 loops=1)
+                                   Index Cond: (word % t.token)
+                                   Buffers: shared hit=17
+     ->  Bitmap Heap Scan on search_vocabulary k  (cost=2.78..5.87 rows=3 width=8) (never executed)
+           Recheck Cond: (word ~~ (('%'::text || t.token) || '%'::text))
+           ->  Bitmap Index Scan on search_vocabulary_word_trgm_idx  (cost=0.00..2.78 rows=3 width=0) (never executed)
+                 Index Cond: (word ~~ (('%'::text || t.token) || '%'::text))
+   Planning:
+     Buffers: shared hit=2
+   Planning Time: 0.144 ms
+   Execution Time: 0.052 ms
+
+-- statement 4 (1.59 ms): WITH candidates AS ( SELECT id, content FROM records 
+   Limit  (cost=408.75..408.78 rows=10 width=78) (actual time=0.013..0.014 rows=0 loops=1)
+     Buffers: shared hit=11
+     ->  Sort  (cost=408.75..409.25 rows=200 width=78) (actual time=0.013..0.013 rows=0 loops=1)
+           Sort Key: ((lower(candidates.content) ~~ 'qzxv999%'::text)) DESC, (word_similarity('qzxv999'::text, candidates.content)) DESC, (length(candidates.content)), candidates.id
+           Sort Method: quicksort  Memory: 25kB
+           Buffers: shared hit=11
+           ->  Subquery Scan on candidates  (cost=183.19..404.43 rows=200 width=78) (actual time=0.011..0.011 rows=0 loops=1)
+                 Buffers: shared hit=11
+                 ->  Limit  (cost=183.19..402.43 rows=200 width=37) (actual time=0.010..0.010 rows=0 loops=1)
+                       Buffers: shared hit=11
+                       ->  Bitmap Heap Scan on records  (cost=183.19..1279.41 rows=1000 width=37) (actual time=0.010..0.010 rows=0 loops=1)
+                             Recheck Cond: (content ~~* '%qzxv999%'::text)
+                             Buffers: shared hit=11
+                             ->  Bitmap Index Scan on records_content_trgm_idx  (cost=0.00..182.94 rows=1000 width=0) (actual time=0.009..0.009 rows=0 loops=1)
+                                   Index Cond: (content ~~* '%qzxv999%'::text)
+                                   Buffers: shared hit=11
+   Planning:
+     Buffers: shared hit=1
+   Planning Time: 1.249 ms
+   Execution Time: 0.036 ms
+

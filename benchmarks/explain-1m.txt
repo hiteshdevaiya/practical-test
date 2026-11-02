@@ -1,0 +1,237 @@
+PostgreSQL 16.11 | pg_trgm 1.6 | role search_reader
+statement_timeout 250ms | random_page_cost 1.1 | jit off | records 1000000 rows
+
+========================================================================
+3-character fragment "lon"
+========================================================================
+Limit  (cost=198.60..198.62 rows=10 width=78) (actual time=4.055..4.058 rows=10 loops=1)
+  Buffers: shared hit=133
+  ->  Sort  (cost=198.60..199.10 rows=200 width=78) (actual time=4.054..4.056 rows=10 loops=1)
+        Sort Key: ((lower(candidates.content) ~~ 'lon%'::text)) DESC, (word_similarity('lon'::text, candidates.content)) DESC, (length(candidates.content)), candidates.id
+        Sort Method: top-N heapsort  Memory: 26kB
+        Buffers: shared hit=133
+        ->  Subquery Scan on candidates  (cost=37.96..194.27 rows=200 width=78) (actual time=2.139..3.909 rows=200 loops=1)
+              Buffers: shared hit=119
+              ->  Limit  (cost=37.96..192.27 rows=200 width=37) (actual time=2.118..2.695 rows=200 loops=1)
+                    Buffers: shared hit=119
+                    ->  Bitmap Heap Scan on records  (cost=37.96..4671.87 rows=6006 width=37) (actual time=2.117..2.684 rows=200 loops=1)
+                          Recheck Cond: (content ~~* '%lon%'::text)
+                          Heap Blocks: exact=113
+                          Buffers: shared hit=119
+                          ->  Bitmap Index Scan on records_content_trgm_idx  (cost=0.00..36.46 rows=6006 width=0) (actual time=1.293..1.294 rows=9944 loops=1)
+                                Index Cond: (content ~~* '%lon%'::text)
+                                Buffers: shared hit=6
+Planning:
+  Buffers: shared hit=85
+Planning Time: 2.795 ms
+Execution Time: 4.527 ms
+-- round trip: 8.85 ms
+
+========================================================================
+multi-token, any order "london roa"
+========================================================================
+Limit  (cost=252.03..252.06 rows=10 width=78) (actual time=5.415..5.417 rows=10 loops=1)
+  Buffers: shared hit=257
+  ->  Sort  (cost=252.03..252.53 rows=200 width=78) (actual time=5.414..5.416 rows=10 loops=1)
+        Sort Key: ((lower(candidates.content) ~~ 'london roa%'::text)) DESC, (word_similarity('london roa'::text, candidates.content)) DESC, (length(candidates.content)), candidates.id
+        Sort Method: top-N heapsort  Memory: 26kB
+        Buffers: shared hit=257
+        ->  Subquery Scan on candidates  (cost=31.84..247.71 rows=200 width=78) (actual time=2.991..5.340 rows=200 loops=1)
+              Buffers: shared hit=257
+              ->  Limit  (cost=31.84..245.71 rows=200 width=37) (actual time=2.975..3.998 rows=200 loops=1)
+                    Buffers: shared hit=257
+                    ->  Bitmap Heap Scan on records  (cost=31.84..462.79 rows=403 width=37) (actual time=2.974..3.986 rows=200 loops=1)
+                          Recheck Cond: ((content ~~* '%london%'::text) AND (content ~~* '%roa%'::text))
+                          Heap Blocks: exact=190
+                          Buffers: shared hit=257
+                          ->  Bitmap Index Scan on records_content_trgm_idx  (cost=0.00..31.74 rows=403 width=0) (actual time=2.888..2.888 rows=727 loops=1)
+                                Index Cond: ((content ~~* '%london%'::text) AND (content ~~* '%roa%'::text))
+                                Buffers: shared hit=67
+Planning:
+  Buffers: shared hit=1
+Planning Time: 2.323 ms
+Execution Time: 5.543 ms
+-- round trip: 8.72 ms
+
+========================================================================
+house number + word "67 brid" (padded index)
+========================================================================
+Limit  (cost=551.75..551.78 rows=10 width=78) (actual time=8.707..8.710 rows=10 loops=1)
+  Buffers: shared hit=190
+  ->  Sort  (cost=551.75..552.25 rows=200 width=78) (actual time=8.706..8.708 rows=10 loops=1)
+        Sort Key: ((lower(candidates.content) ~~ '67 brid%'::text)) DESC, (word_similarity('67 brid'::text, candidates.content)) DESC, (length(candidates.content)), candidates.id
+        Sort Method: top-N heapsort  Memory: 26kB
+        Buffers: shared hit=190
+        ->  Subquery Scan on candidates  (cost=331.92..547.43 rows=200 width=78) (actual time=7.102..8.646 rows=139 loops=1)
+              Buffers: shared hit=190
+              ->  Limit  (cost=331.92..545.43 rows=200 width=37) (actual time=7.086..7.745 rows=139 loops=1)
+                    Buffers: shared hit=190
+                    ->  Bitmap Heap Scan on records  (cost=331.92..849.68 rows=485 width=37) (actual time=7.085..7.735 rows=139 loops=1)
+                          Recheck Cond: (((' '::text || lower(content)) ~~ '% 67%'::text) AND (content ~~* '%brid%'::text))
+                          Rows Removed by Index Recheck: 1
+                          Heap Blocks: exact=136
+                          Buffers: shared hit=190
+                          ->  BitmapAnd  (cost=331.92..331.92 rows=485 width=0) (actual time=7.047..7.048 rows=0 loops=1)
+                                Buffers: shared hit=54
+                                ->  Bitmap Index Scan on records_content_padded_trgm_idx  (cost=0.00..66.07 rows=10101 width=0) (actual time=0.865..0.866 rows=3289 loops=1)
+                                      Index Cond: ((' '::text || lower(content)) ~~ '% 67%'::text)
+                                      Buffers: shared hit=18
+                                ->  Bitmap Index Scan on records_content_trgm_idx  (cost=0.00..265.36 rows=48048 width=0) (actual time=5.289..5.289 rows=41094 loops=1)
+                                      Index Cond: (content ~~* '%brid%'::text)
+                                      Buffers: shared hit=36
+Planning:
+  Buffers: shared hit=10
+Planning Time: 1.199 ms
+Execution Time: 8.791 ms
+-- round trip: 11.26 ms
+
+========================================================================
+one-letter tail "darwin w" (fast plan)
+========================================================================
+Limit  (cost=212.41..212.43 rows=10 width=78) (actual time=4.383..4.385 rows=10 loops=1)
+  Buffers: shared hit=185
+  ->  Sort  (cost=212.41..212.51 rows=40 width=78) (actual time=4.381..4.383 rows=10 loops=1)
+        Sort Key: ((lower(candidates.content) ~~ 'darwin w%'::text)) DESC, (word_similarity('darwin w'::text, candidates.content)) DESC, (length(candidates.content)), candidates.id
+        Sort Method: top-N heapsort  Memory: 26kB
+        Buffers: shared hit=185
+        ->  Subquery Scan on candidates  (cost=66.55..211.54 rows=40 width=78) (actual time=3.399..4.349 rows=46 loops=1)
+              Filter: ((' '::text || lower(candidates.content)) ~~ '% w%'::text)
+              Rows Removed by Filter: 154
+              Buffers: shared hit=185
+              ->  Limit  (cost=66.55..207.64 rows=200 width=37) (actual time=3.374..3.857 rows=200 loops=1)
+                    Buffers: shared hit=185
+                    ->  Bitmap Heap Scan on records  (cost=66.55..5716.02 rows=8008 width=37) (actual time=3.373..3.845 rows=200 loops=1)
+                          Recheck Cond: (content ~~* '%darwin%'::text)
+                          Heap Blocks: exact=146
+                          Buffers: shared hit=185
+                          ->  Bitmap Index Scan on records_content_trgm_idx  (cost=0.00..64.55 rows=8008 width=0) (actual time=2.767..2.767 rows=6416 loops=1)
+                                Index Cond: (content ~~* '%darwin%'::text)
+                                Buffers: shared hit=39
+Planning:
+  Buffers: shared hit=1
+Planning Time: 1.731 ms
+Execution Time: 4.607 ms
+-- round trip: 7.63 ms
+
+========================================================================
+one-letter tail "darwin w" (accurate plan)
+========================================================================
+Limit  (cost=1806.27..1806.29 rows=10 width=78) (actual time=19.665..19.669 rows=10 loops=1)
+  Buffers: shared hit=261
+  ->  Sort  (cost=1806.27..1806.77 rows=200 width=78) (actual time=19.665..19.667 rows=10 loops=1)
+        Sort Key: ((lower(candidates.content) ~~ 'darwin w%'::text)) DESC, (word_similarity('darwin w'::text, candidates.content)) DESC, (length(candidates.content)), candidates.id
+        Sort Method: top-N heapsort  Memory: 26kB
+        Buffers: shared hit=261
+        ->  Subquery Scan on candidates  (cost=1610.35..1801.95 rows=200 width=78) (actual time=17.507..19.586 rows=200 loops=1)
+              Buffers: shared hit=261
+              ->  Limit  (cost=1610.35..1799.95 rows=200 width=37) (actual time=17.492..18.307 rows=200 loops=1)
+                    Buffers: shared hit=261
+                    ->  Bitmap Heap Scan on records  (cost=1610.35..3757.52 rows=2265 width=37) (actual time=17.491..18.296 rows=200 loops=1)
+                          Recheck Cond: ((content ~~* '%darwin%'::text) AND ((' '::text || lower(content)) ~~ '% w%'::text))
+                          Heap Blocks: exact=184
+                          Buffers: shared hit=261
+                          ->  BitmapAnd  (cost=1610.35..1610.35 rows=2265 width=0) (actual time=17.292..17.293 rows=0 loops=1)
+                                Buffers: shared hit=77
+                                ->  Bitmap Index Scan on records_content_trgm_idx  (cost=0.00..64.55 rows=8008 width=0) (actual time=2.365..2.365 rows=6416 loops=1)
+                                      Index Cond: (content ~~* '%darwin%'::text)
+                                      Buffers: shared hit=39
+                                ->  Bitmap Index Scan on records_content_padded_trgm_idx  (cost=0.00..1544.42 rows=282828 width=0) (actual time=14.565..14.565 rows=250557 loops=1)
+                                      Index Cond: ((' '::text || lower(content)) ~~ '% w%'::text)
+                                      Buffers: shared hit=38
+Planning:
+  Buffers: shared hit=2
+Planning Time: 1.285 ms
+Execution Time: 19.825 ms
+-- round trip: 22.00 ms
+
+========================================================================
+selective token "edward"
+========================================================================
+Limit  (cost=213.42..213.44 rows=10 width=78) (actual time=4.900..4.902 rows=10 loops=1)
+  Buffers: shared hit=190
+  ->  Sort  (cost=213.42..213.92 rows=200 width=78) (actual time=4.899..4.901 rows=10 loops=1)
+        Sort Key: ((lower(candidates.content) ~~ 'edward%'::text)) DESC, (word_similarity('edward'::text, candidates.content)) DESC, (length(candidates.content)), candidates.id
+        Sort Method: top-N heapsort  Memory: 26kB
+        Buffers: shared hit=190
+        ->  Subquery Scan on candidates  (cost=77.06..209.09 rows=200 width=78) (actual time=3.205..4.813 rows=200 loops=1)
+              Buffers: shared hit=190
+              ->  Limit  (cost=77.06..207.09 rows=200 width=37) (actual time=3.191..3.628 rows=200 loops=1)
+                    Buffers: shared hit=190
+                    ->  Bitmap Heap Scan on records  (cost=77.06..6585.41 rows=10010 width=37) (actual time=3.190..3.615 rows=200 loops=1)
+                          Recheck Cond: (content ~~* '%edward%'::text)
+                          Heap Blocks: exact=144
+                          Buffers: shared hit=190
+                          ->  Bitmap Index Scan on records_content_trgm_idx  (cost=0.00..74.56 rows=10010 width=0) (actual time=2.547..2.548 rows=6503 loops=1)
+                                Index Cond: (content ~~* '%edward%'::text)
+                                Buffers: shared hit=46
+Planning:
+  Buffers: shared hit=1
+Planning Time: 1.711 ms
+Execution Time: 5.088 ms
+-- round trip: 7.87 ms
+
+========================================================================
+broad token "street"
+========================================================================
+Limit  (cost=122.78..122.81 rows=10 width=78) (actual time=8.405..8.408 rows=10 loops=1)
+  Buffers: shared hit=51
+  ->  Sort  (cost=122.78..123.28 rows=200 width=78) (actual time=8.404..8.405 rows=10 loops=1)
+        Sort Key: ((lower(candidates.content) ~~ 'street%'::text)) DESC, (word_similarity('street'::text, candidates.content)) DESC, (length(candidates.content)), candidates.id
+        Sort Method: top-N heapsort  Memory: 26kB
+        Buffers: shared hit=51
+        ->  Subquery Scan on candidates  (cost=0.00..118.46 rows=200 width=78) (actual time=0.130..8.298 rows=200 loops=1)
+              Buffers: shared hit=51
+              ->  Limit  (cost=0.00..116.46 rows=200 width=37) (actual time=0.114..6.962 rows=200 loops=1)
+                    Buffers: shared hit=51
+                    ->  Seq Scan on records  (cost=0.00..20984.00 rows=36036 width=37) (actual time=0.114..6.947 rows=200 loops=1)
+                          Filter: (content ~~* '%street%'::text)
+                          Rows Removed by Filter: 5766
+                          Buffers: shared hit=51
+Planning:
+  Buffers: shared hit=1
+Planning Time: 1.637 ms
+Execution Time: 8.444 ms
+-- round trip: 10.96 ms
+
+========================================================================
+no match "qzxv999"
+========================================================================
+Limit  (cost=143.56..143.59 rows=10 width=78) (actual time=0.050..0.051 rows=0 loops=1)
+  Buffers: shared hit=11
+  ->  Sort  (cost=143.56..143.81 rows=100 width=78) (actual time=0.049..0.049 rows=0 loops=1)
+        Sort Key: ((lower(candidates.content) ~~ 'qzxv999%'::text)) DESC, (word_similarity('qzxv999'::text, candidates.content)) DESC, (length(candidates.content)), candidates.id
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=11
+        ->  Subquery Scan on candidates  (cost=30.24..141.40 rows=100 width=78) (actual time=0.039..0.040 rows=0 loops=1)
+              Buffers: shared hit=11
+              ->  Limit  (cost=30.24..140.40 rows=100 width=37) (actual time=0.038..0.039 rows=0 loops=1)
+                    Buffers: shared hit=11
+                    ->  Bitmap Heap Scan on records  (cost=30.24..140.40 rows=100 width=37) (actual time=0.038..0.038 rows=0 loops=1)
+                          Recheck Cond: (content ~~* '%qzxv999%'::text)
+                          Buffers: shared hit=11
+                          ->  Bitmap Index Scan on records_content_trgm_idx  (cost=0.00..30.21 rows=100 width=0) (actual time=0.036..0.036 rows=0 loops=1)
+                                Index Cond: (content ~~* '%qzxv999%'::text)
+                                Buffers: shared hit=11
+Planning:
+  Buffers: shared hit=1
+Planning Time: 1.829 ms
+Execution Time: 0.146 ms
+-- round trip: 3.29 ms
+
+========================================================================
+typo correction vocabulary lookup ("londn")
+========================================================================
+Limit  (cost=10.82..10.83 rows=1 width=12) (actual time=0.722..0.722 rows=1 loops=1)
+  Buffers: shared hit=7
+  ->  Sort  (cost=10.82..10.83 rows=1 width=12) (actual time=0.721..0.721 rows=1 loops=1)
+        Sort Key: ((word <-> 'londn'::text)), word
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=7
+        ->  Seq Scan on search_vocabulary  (cost=0.00..10.81 rows=1 width=12) (actual time=0.071..0.700 rows=1 loops=1)
+              Filter: (word % 'londn'::text)
+              Rows Removed by Filter: 544
+              Buffers: shared hit=4
+Planning:
+  Buffers: shared hit=11
+Planning Time: 0.211 ms
+Execution Time: 0.856 ms
