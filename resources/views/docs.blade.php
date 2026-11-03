@@ -7,8 +7,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.17.14/swagger-ui.min.css">
     <style>
         body { margin: 0; background: #fafafa; }
-        .back { display: block; padding: 10px 20px; background: #020617; font: 14px system-ui, sans-serif; }
-        .back a { color: #38bdf8; text-decoration: none; }
+        .back { display: block; padding: 10px 20px; background: #ffffff; border-bottom: 1px solid #e2e8f0; font: 14px system-ui, sans-serif; }
+        .back a { color: #0369a1; text-decoration: none; }
         .keybox { padding: 10px 20px; background: #ecfdf5; border-bottom: 1px solid #a7f3d0; font: 14px system-ui, sans-serif; color: #064e3b; }
         .keybox code { background: #d1fae5; padding: 2px 6px; border-radius: 4px; word-break: break-all; }
         .keybox button { margin: 0 8px; padding: 2px 10px; cursor: pointer; }

@@ -67,7 +67,7 @@ function highlightedFragment(content, pattern) {
 
         if (index % 2 === 1) {
             const mark = document.createElement('mark');
-            mark.className = 'rounded bg-sky-500/30 px-0.5 text-sky-100';
+            mark.className = 'rounded bg-sky-200 px-0.5 text-sky-900';
             mark.textContent = part;
             fragment.append(mark);
         } else {
@@ -158,12 +158,12 @@ export function initAutocomplete() {
     function showMessage(text, kind = 'error') {
         message.textContent = text;
         message.classList.toggle('hidden', text === '');
-        message.classList.toggle('border-rose-500/40', kind === 'error');
-        message.classList.toggle('bg-rose-500/10', kind === 'error');
-        message.classList.toggle('text-rose-200', kind === 'error');
-        message.classList.toggle('border-sky-500/40', kind === 'info');
-        message.classList.toggle('bg-sky-500/10', kind === 'info');
-        message.classList.toggle('text-sky-200', kind === 'info');
+        message.classList.toggle('border-rose-300', kind === 'error');
+        message.classList.toggle('bg-rose-50', kind === 'error');
+        message.classList.toggle('text-rose-900', kind === 'error');
+        message.classList.toggle('border-sky-300', kind === 'info');
+        message.classList.toggle('bg-sky-50', kind === 'info');
+        message.classList.toggle('text-sky-900', kind === 'info');
     }
 
     /**
@@ -237,7 +237,7 @@ export function initAutocomplete() {
         [...list.children].forEach((item, index) => {
             const selected = index === activeIndex;
             item.setAttribute('aria-selected', selected ? 'true' : 'false');
-            item.classList.toggle('bg-slate-800', selected);
+            item.classList.toggle('bg-slate-100', selected);
         });
 
         const active = list.children[activeIndex];
@@ -282,7 +282,7 @@ export function initAutocomplete() {
             item.setAttribute('role', 'option');
             item.setAttribute('aria-selected', 'false');
             item.dataset.index = String(index);
-            item.className = 'flex cursor-pointer items-center justify-between gap-3 px-4 py-2.5 text-sm text-slate-200 hover:bg-slate-800';
+            item.className = 'flex cursor-pointer items-center justify-between gap-3 px-4 py-2.5 text-sm text-slate-800 hover:bg-slate-100';
 
             // Wrap the highlighted text in a single element: appending the
             // fragment directly would make every text node and <mark> a flex
@@ -294,7 +294,7 @@ export function initAutocomplete() {
 
             if (suggestion.match === 'corrected') {
                 const badge = document.createElement('span');
-                badge.className = 'shrink-0 rounded-full border border-sky-500/40 px-2 py-0.5 text-[10px] uppercase tracking-wide text-sky-300';
+                badge.className = 'shrink-0 rounded-full border border-sky-300 px-2 py-0.5 text-[10px] uppercase tracking-wide text-sky-700';
                 badge.textContent = 'corrected';
                 item.append(badge);
             }

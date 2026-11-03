@@ -10,12 +10,6 @@
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
-/* Keep the native search clear button visible on dark backgrounds. */
-input[type='search']::-webkit-search-cancel-button {
-    filter: invert(1);
-    opacity: 0.5;
-}
-
 /* Suggestion options use a pointer cursor and a subtle transition. */
 #suggestions [role='option'] {
     transition: background-color 100ms ease-in-out;
